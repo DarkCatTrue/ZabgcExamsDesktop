@@ -1,0 +1,41 @@
+﻿<Page x:Class="ZabgcExamsDesktop.MVVM.View.Pages.SearchExamPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="1100"
+      Title="SearchExamPage"
+      Background="#323a47">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}" Height="Auto"/>
+        <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="3" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
+        <ComboBox Grid.Column="0" Grid.Row="3" Name="Department" ItemsSource="{Binding Departments}" SelectedItem="{Binding DepartmentText}"/>
+        <ComboBox Grid.Column="1" Grid.Row="3" Name="Group" IsEditable="True" ItemsSource="{Binding Groups}" SelectedItem="{Binding GroupText}"/>
+        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" Name="Teacher" ItemsSource="{Binding Teachers}" SelectedItem="{Binding TeacherText}"/>
+        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" Name="Audience" ItemsSource="{Binding Audiences}" SelectedItem="{Binding AudienceText}"/>
+        <TextBlock Text="Отделение" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
+        <TextBlock Text="Группа" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
+        <TextBlock Text="Преподаватель" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
+        <TextBlock Text="Аудитория" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
+        <Button Name="SearchBtn" Grid.Column="4" Grid.Row="2" Height="30" Content="Поиск" Command="{Binding SearchCommand}"/>
+        <Button Name="ClearSearchBtn" Grid.Column="4" Grid.Row="3" Height="30" Content="Очистить поиск" Command="{Binding ClearSearchCommand}"/>
+        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="5" Grid.Row="4" AutoGenerateColumns="True"/>
+    </Grid>
+</Page>

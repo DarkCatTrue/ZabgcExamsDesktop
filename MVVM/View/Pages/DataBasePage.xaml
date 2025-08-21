@@ -1,0 +1,37 @@
+﻿<Page x:Class="ZabgcExamsDesktop.MVVM.View.Pages.DataBasePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="1100"
+      Title="DataBasePage"
+      Background="#323a47">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Button Name="EditDataBaseBtn" Grid.ColumnSpan="7" Grid.Row="1" Content="Экзамены" Command="{Binding BackToExamsCommand}" Height="Auto"/>
+        <Button Grid.Column="0" Grid.Row="2" Name="DepartmentBtn" Content="Отделения" Command="{Binding DepartmentCommand}"/>
+        <Button Grid.Column="1" Grid.Row="2" Name="GroupBtn" Content="Группы" Command="{Binding GroupCommand}"/>
+        <Button Grid.Column="2" Grid.Row="2" Name="AudienceBtn" Content="Аудитории" Command="{Binding AudienceCommand}"/>
+        <Button Grid.Column="3" Grid.Row="2" Name="TeachersBtn" Content="Преподаватели" Command="{Binding TeacherCommand}"/>
+        <Button Grid.Column="4" Grid.Row="2" Name="DisciplinesBtn" Content="Дисциплины" Command="{Binding DisciplineCommand}"/>
+        <Button Grid.Column="5" Grid.Row="2" Name="QualificationsBtn" Content="Квалификации" Command="{Binding QualificationCommand}"/>
+        <Button Grid.Column="6" Grid.Row="2" Name="TypeOfExamsBtn" Content="Типы экзамена" Command="{Binding TypeExamCommand}"/>
+        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="7" Grid.Row="4" AutoGenerateColumns="True"/>
+    </Grid>
+</Page>
