@@ -3,16 +3,27 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages"
+      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages" 
+      xmlns:converters="clr-namespace:ZabgcExamsDesktop.MVVM.Converters"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="1100"
+      d:DesignHeight="1080" d:DesignWidth="1920"
       Title="SearchExamPage"
-      Background="#323a47">
-    
+      Background="#323a47"
+      >
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary>
+                    <converters:TeachersConverter x:Key="TeachersConverter"/>
+                    <converters:AudiencesConverter x:Key="AudiencesConverter"/>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="40"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
@@ -26,16 +37,106 @@
         </Grid.ColumnDefinitions>
         <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}" Height="Auto"/>
         <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="3" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
-        <ComboBox Grid.Column="0" Grid.Row="3" Name="Department" ItemsSource="{Binding Departments}" SelectedItem="{Binding DepartmentText}"/>
-        <ComboBox Grid.Column="1" Grid.Row="3" Name="Group" IsEditable="True" ItemsSource="{Binding Groups}" SelectedItem="{Binding GroupText}"/>
-        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" Name="Teacher" ItemsSource="{Binding Teachers}" SelectedItem="{Binding TeacherText}"/>
-        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" Name="Audience" ItemsSource="{Binding Audiences}" SelectedItem="{Binding AudienceText}"/>
+        <ComboBox Grid.Column="0" Grid.Row="3" Name="Department" ItemsSource="{Binding Department}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment}"/>
+        <ComboBox Grid.Column="1" Grid.Row="3" Name="Group" IsEditable="True" ItemsSource="{Binding FilteredGroups}" DisplayMemberPath="NameOfGroup" SelectedValuePath="IdGroup" SelectedItem="{Binding SelectedGroup}"/>
+        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" Name="Teacher" ItemsSource="{Binding Teacher}" DisplayMemberPath="FullName" SelectedValuePath="IdTeacher" SelectedItem="{Binding SelectedTeacher}"/>
+        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" Name="Audience" ItemsSource="{Binding Audience}" DisplayMemberPath="NumberAudience" SelectedItem="{Binding SelectedAudience}"/>
         <TextBlock Text="Отделение" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Группа" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Преподаватель" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Аудитория" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <Button Name="SearchBtn" Grid.Column="4" Grid.Row="2" Height="30" Content="Поиск" Command="{Binding SearchCommand}"/>
         <Button Name="ClearSearchBtn" Grid.Column="4" Grid.Row="3" Height="30" Content="Очистить поиск" Command="{Binding ClearSearchCommand}"/>
-        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="5" Grid.Row="4" AutoGenerateColumns="True"/>
+        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="5" Grid.Row="4" 
+          ItemsSource="{Binding SearchResults}" 
+          AutoGenerateColumns="False"
+          CanUserAddRows="True"
+          CanUserDeleteRows="True"
+          IsReadOnly="False"
+          VirtualizingStackPanel.IsVirtualizing="True"
+                  >
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Отделение">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding IdGroupNavigation.IdDepartmentNavigation.NameOfDepartment}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding DataContext.Department, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                            DisplayMemberPath="NameOfDepartment"
+                            SelectedValuePath="IdDepartment"
+                            SelectedValue="{Binding SelectedDepartment}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+
+
+
+
+                <DataGridTemplateColumn Header="Группа">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding IdGroupNavigation.NameOfGroup, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding DataContext.FilteredGroups, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      DisplayMemberPath="NameOfGroup"
+                      SelectedValuePath="IdGroup"
+                      SelectedValue="{Binding IdGroup, UpdateSourceTrigger=PropertyChanged}"
+                      IsEditable="True"    
+                      IsSynchronizedWithCurrentItem="False"          />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTextColumn Header="Консультация/Экзамен" 
+                           Binding="{Binding IdTypeOfLessonNavigation.TypeOfLesson1}"/>
+
+                <DataGridTextColumn Header="Тип экзамена" 
+                           Binding="{Binding IdTypeOfExamNavigation.TypeOfExam1}"/>
+
+                <DataGridTextColumn Header="Квалификация" 
+                    Binding="{Binding IdQualificationNavigation.NameQualification}" 
+                    Visibility="{Binding DataContext.ShouldShowQualification, 
+                    RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="Дисциплина" 
+                           Binding="{Binding IdDisciplineNavigation.NameDiscipline}"/>
+
+                <DataGridTextColumn Header="Преподаватели" 
+                           Binding="{Binding IdTeachers, Converter={StaticResource TeachersConverter}}"/>
+
+                <DataGridTextColumn Header="Аудитории" 
+                           Binding="{Binding IdAudiences, Converter={StaticResource AudiencesConverter}}"/>
+
+                <DataGridTextColumn Header="Дата/время" 
+                           Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>
+                <DataGridTemplateColumn Header="Действия" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Сохранить" 
+                        Command="{Binding DataContext.SaveRowCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"
+                        Margin="2" Padding="5,2" Width="Auto"
+                        Background="#FF4CAF50" Foreground="White"/>
+
+                                <Button Content="Удалить" 
+                        Command="{Binding DataContext.DeleteRowCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"
+                        Margin="2" Padding="5,2" Width="Auto"
+                        Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Page>
