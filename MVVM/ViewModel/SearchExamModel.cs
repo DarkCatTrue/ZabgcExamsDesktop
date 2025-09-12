@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.DirectoryServices;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -27,57 +26,57 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Group _selectedGroup;
         private Teacher _selectedTeacher;
         private Audience _selectedAudience;
-        private Exam _exam;
-
-
-        private Department _selectedDepartmentSearch;
-        private Group _selectedGroupSearch;
-        private Teacher _selectedTeacherSearch;
-        private Audience _selectedAudienceSearch;
-
+        private Exam _selectedExam;
+        private ObservableCollection<Exam> _searchResults;
         public ICommand CreateExamCommand { get; set; }
         public ICommand EditDataBaseCommand { get; set; }
         public ICommand SearchCommand { get; set; }
         public ICommand ClearSearchCommand { get; set; }
         public ICommand SaveRowCommand { get; set; }
+        public ICommand DeleteRowCommand { get; set; }
 
 
         public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
         public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
-        public ObservableCollection<Group> FilteredGroups { get => _filteredGroups ; set { _filteredGroups = value; OnPropertyChanged(); } }
+        public ObservableCollection<Group> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
         public ObservableCollection<Teacher> Teacher { get => teachers; set { teachers = value; OnPropertyChanged(); } }
         public ObservableCollection<Audience> Audience { get => audiences; set { audiences = value; OnPropertyChanged(); } }
-        public ObservableCollection<Exam> SearchResults { get; set; }
 
-        public Department SelectedDepartmentSearch
+        public ObservableCollection<Exam> SearchResults
         {
-            get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
+            get => _searchResults; set
+            {
+                _searchResults = value; foreach (var exam in _searchResults)
+                {
+                    exam.PropertyChanged += Exam_PropertyChanged;
+                }
+                OnPropertyChanged(nameof(SearchResults));
+            }
         }
 
-        public Group SelectedGroupSearch
+        private HashSet<Exam> _modifiedExams = new HashSet<Exam>();
+
+        private void Exam_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            get => _selectedGroup; set { _selectedGroup = value; OnPropertyChanged(); }
-        }
-        public Teacher SelectedTeacherSearch
-        {
-            get => _selectedTeacher; set { _selectedTeacher = value; OnPropertyChanged(); }
+            if (sender is Exam exam)
+            {
+                _modifiedExams.Add(exam);
+            }
         }
 
-        public Audience SelectedAudienceSearch
-        {
-            get => _selectedAudience; set { _selectedAudience = value; OnPropertyChanged(); }
-        }
-
-        private Exam _selectedExam;
         public Exam SelectedExam
         {
             get => _selectedExam;
-            set { _selectedExam = value; OnPropertyChanged(); }
+            set
+            {
+                _selectedExam = value;
+                OnPropertyChanged();
+            }
         }
 
         public Department SelectedDepartment
         {
-            get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); }
+            get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
         }
 
         public Group SelectedGroup
@@ -98,7 +97,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public SearchExamModel()
         {
             LoadDB();
-            SaveRowCommand = new RelayCommand(SaveSelectedRow);
+            DeleteRowCommand = new RelayCommand(DeleteExam);
             CreateExamCommand = new RelayCommand(CreateExam);
             EditDataBaseCommand = new RelayCommand(EditDataBase);
             SearchCommand = new RelayCommand(Search);
@@ -122,12 +121,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 FilteredGroups = new ObservableCollection<Group>(groups);
                 SearchResults = new ObservableCollection<Exam>(await context.Exams
                 .Include(e => e.IdGroupNavigation)
+                .ThenInclude(e => e.IdDepartmentNavigation)
                 .Include(e => e.IdTeachers)
                 .Include(e => e.IdAudiences)
                 .Include(e => e.IdDisciplineNavigation)
                 .Include(e => e.IdQualificationNavigation)
                 .Include(e => e.IdTypeOfExamNavigation)
                 .Include(e => e.IdTypeOfLessonNavigation)
+                .AsNoTracking()
                 .ToListAsync());
             }
             catch (Exception ex)
@@ -154,7 +155,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SelectedGroup = null;
         }
 
-        private async void Search()
+        private async void Search(object parameter)
         {
             using var context = new ApplicationDbContext();
 
@@ -185,51 +186,33 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SearchResults = new ObservableCollection<Exam>(results);
             OnPropertyChanged(nameof(SearchResults));
         }
-
-        private void SaveSelectedRow()
+        private void DeleteExam(object parameter)
         {
-            if (SelectedExam != null)
+            if (parameter is not Exam exam) return;
+
+            var result = MessageBox.Show("Удалить запись?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
             {
-                SaveRow(SelectedExam);
-            }
-        }
-
-        private async void SaveRow(Exam exam)
-        {
-            if (exam == null) return;
-
-            try
-            {
-                using var context = new ApplicationDbContext();
-
-                var existingExam = await context.Exams
-                    .Include(e => e.IdTeachers)
-                    .Include(e => e.IdAudiences)
-                    .FirstOrDefaultAsync(e => e.IdExam == exam.IdExam);
-
-                if (existingExam != null)
+                try
                 {
-                    existingExam.IdGroup = exam.IdGroup;
-                    existingExam.IdDiscipline = exam.IdDiscipline;
-                    existingExam.IdTypeOfLesson = exam.IdTypeOfLesson;
-                    existingExam.IdTypeOfExam = exam.IdTypeOfExam;
-                    existingExam.IdQualification = exam.IdQualification;
-                    existingExam.DateEvent = exam.DateEvent;
-
-                    existingExam.IdTeachers = exam.IdTeachers;
-                    existingExam.IdAudiences = exam.IdAudiences;
-
-                    await context.SaveChangesAsync();
-                    MessageBox.Show($"Изменения для группы {exam.IdGroupNavigation?.NameOfGroup} сохранены!");
+                    using var context = new ApplicationDbContext();
+                    var existingExam = context.Exams.Find(exam.IdExam);
+                    if (existingExam != null)
+                    {
+                        context.Exams.Remove(existingExam);
+                        context.SaveChanges();
+                        SearchResults.Remove(exam);
+                        MessageBox.Show("Удалено!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка: {ex.Message}");
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка сохранения: {ex.Message}");
-            }
         }
 
-        public void ClearSearch()
+        public void ClearSearch(object parameter)
         {
             SelectedAudience = null;
             SelectedGroup = null;
@@ -237,13 +220,13 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SelectedTeacher = null;
         }
 
-        public void EditDataBase()
+        public void EditDataBase(object parameter)
         {
             Page EditDB = new DataBasePage();
             SearchExamWindow.pageManager.ChangePage(EditDB);
         }
 
-        public void CreateExam()
+        public void CreateExam(object parameter)
         {
             var ExamWindow = new ExamWindow();
             ExamWindow.Show();

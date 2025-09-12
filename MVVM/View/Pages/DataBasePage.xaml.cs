@@ -11,7 +11,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
         public DataBasePage()
         {
             InitializeComponent();
-            DataContext = new DataBaseModel();
+            //DataContext = new DataBaseModel();
         }
     }
 }
