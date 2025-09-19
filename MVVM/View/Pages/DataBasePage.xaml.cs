@@ -1,4 +1,8 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
+using Microsoft.EntityFrameworkCore;
+using System.Windows.Data;
+using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.ViewModel;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages
@@ -11,7 +15,8 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
         public DataBasePage()
         {
             InitializeComponent();
-            //DataContext = new DataBaseModel();
+            ApplicationDbContext context = new ApplicationDbContext();
+            DataContext = new DbViewModel(context);
         }
     }
 }

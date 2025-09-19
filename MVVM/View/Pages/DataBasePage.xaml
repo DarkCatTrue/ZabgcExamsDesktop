@@ -13,6 +13,9 @@
             <RowDefinition Height="60"/>
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -25,13 +28,232 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Button Name="EditDataBaseBtn" Grid.ColumnSpan="7" Grid.Row="1" Content="Экзамены" Command="{Binding BackToExamsCommand}" Height="Auto"/>
-        <Button Grid.Column="0" Grid.Row="2" Name="DepartmentBtn" Content="Отделения" Command="{Binding DepartmentCommand}"/>
-        <Button Grid.Column="1" Grid.Row="2" Name="GroupBtn" Content="Группы" Command="{Binding GroupCommand}"/>
-        <Button Grid.Column="2" Grid.Row="2" Name="AudienceBtn" Content="Аудитории" Command="{Binding AudienceCommand}"/>
-        <Button Grid.Column="3" Grid.Row="2" Name="TeachersBtn" Content="Преподаватели" Command="{Binding TeacherCommand}"/>
-        <Button Grid.Column="4" Grid.Row="2" Name="DisciplinesBtn" Content="Дисциплины" Command="{Binding DisciplineCommand}"/>
-        <Button Grid.Column="5" Grid.Row="2" Name="QualificationsBtn" Content="Квалификации" Command="{Binding QualificationCommand}"/>
-        <Button Grid.Column="6" Grid.Row="2" Name="TypeOfExamsBtn" Content="Типы экзамена" Command="{Binding TypeExamCommand}"/>
-        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="7" Grid.Row="4" AutoGenerateColumns="True"/>
+        <Button Grid.Column="0" Grid.Row="2" Name="DepartmentBtn" Content="Отделения" Command="{Binding LoadTableCommand}" CommandParameter="Departments"/>
+        <Button Grid.Column="1" Grid.Row="2" Name="GroupBtn" Content="Группы" Command="{Binding LoadTableCommand}" CommandParameter="Groups"/>
+        <Button Grid.Column="2" Grid.Row="2" Name="AudienceBtn" Content="Аудитории" Command="{Binding LoadTableCommand}" CommandParameter="Audiences"/>
+        <Button Grid.Column="3" Grid.Row="2" Name="TeachersBtn" Content="Преподаватели" Command="{Binding LoadTableCommand}" CommandParameter="Teachers"/>
+        <Button Grid.Column="4" Grid.Row="2" Name="DisciplinesBtn" Content="Дисциплины" Command="{Binding LoadTableCommand}" CommandParameter="Disciplines"/>
+        <Button Grid.Column="5" Grid.Row="2" Name="QualificationsBtn" Content="Квалификации" Command="{Binding LoadTableCommand}" CommandParameter="Qualifications"/>
+        <Button Grid.Column="6" Grid.Row="2" Name="TypeOfExamsBtn" Content="Типы экзамена" Command="{Binding LoadTableCommand}" CommandParameter="TypeOfExams"/>
+        <Button Content="➕ Добавить запись" 
+        Command="{Binding AddCommand}"
+        CommandParameter="{Binding}"
+        Background="#FF4CAF50"
+        Foreground="White"
+        ToolTip="Добавить новую запись"
+        Grid.Column="6"
+        Grid.Row="3"/>
+        <Button Content="💾 Сохранить" 
+        Command="{Binding SaveCommand}"
+        Background="#FF009688"
+        Foreground="White"
+        ToolTip="Сохранить изменения"
+        Grid.Column="6"
+        Grid.Row="5"/>
+        <Button Content="✏️ Редактировать"
+        Command="{Binding EditCommand}"
+        CommandParameter="{Binding}"
+        Background="#FF2196F3" 
+        Foreground="White"
+        Grid.Column="6"
+        Grid.Row="4"/>
+        <DataGrid 
+            ItemsSource="{Binding Departments}"
+            Visibility="{Binding DepartmentsVisibility}"
+            AutoGenerateColumns="False"
+            SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4"
+            SelectedItem="{Binding SelectedItem}"
+            IsReadOnly="{Binding IsNotEditing}"
+            CanUserAddRows="False"
+            >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Отделение" Binding="{Binding NameOfDepartment}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Margin="2" Padding="5,2" Width="Auto"
+                                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+            ItemsSource="{Binding Groups}"
+            Visibility="{Binding GroupsVisibility}"
+            SelectedItem="{Binding SelectedItem}"
+            IsReadOnly="{Binding IsNotEditing}"
+            AutoGenerateColumns="False"
+            CanUserAddRows="False"
+            SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Группа" Binding="{Binding NameOfGroup}" Width="Auto"/>
+                <DataGridTextColumn Header="Отделение" Binding="{Binding IdDepartmentNavigation.NameOfDepartment}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                Margin="2" Padding="5,2" Width="Auto"
+                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+        ItemsSource="{Binding Audiences}"
+        Visibility="{Binding AudiencesVisibility}"
+        SelectedItem="{Binding SelectedItem}"
+        IsReadOnly="{Binding IsNotEditing}"
+        CanUserAddRows="False"
+        AutoGenerateColumns="False"
+        SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Аудитория" Binding="{Binding NumberAudience}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                CommandParameter="{Binding}"
+                Margin="2" Padding="5,2" Width="Auto"
+                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+        ItemsSource="{Binding Teachers}"
+        Visibility="{Binding TeachersVisibility}"
+        SelectedItem="{Binding SelectedItem}"
+        IsReadOnly="{Binding IsNotEditing}"
+        CanUserAddRows="False"
+        AutoGenerateColumns="False"
+        SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Преподаватель" Binding="{Binding FullName}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                CommandParameter="{Binding}"
+                Margin="2" Padding="5,2" Width="Auto"
+                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+        ItemsSource="{Binding Disciplines}"
+        Visibility="{Binding DisciplinesVisibility}"
+        SelectedItem="{Binding SelectedItem}"
+        IsReadOnly="{Binding IsNotEditing}"
+        AutoGenerateColumns="False"
+        CanUserAddRows="False"
+        SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Дисциплина" Binding="{Binding NameDiscipline}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"
+                Margin="2" Padding="5,2" Width="Auto"
+                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+        ItemsSource="{Binding Qualifications}"
+        Visibility="{Binding QualificationsVisibility}"
+        SelectedItem="{Binding SelectedItem}"
+        IsReadOnly="{Binding IsNotEditing}"
+        AutoGenerateColumns="False"
+        CanUserAddRows="False"
+        SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Квалификация" Binding="{Binding NameQualification}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Margin="2" Padding="5,2" Width="Auto"
+                                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid
+        ItemsSource="{Binding TypeOfExams}"
+        Visibility="{Binding TypeOfExamsVisibility}"
+        AutoGenerateColumns="False"
+        SelectedItem="{Binding SelectedItem}"
+        IsReadOnly="{Binding IsNotEditing}"
+        CanUserAddRows="False"
+        SelectionMode="Single"
+            Grid.ColumnSpan="6" 
+            Grid.Row="3"
+            Grid.RowSpan="4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Тип экзамена" Binding="{Binding TypeOfExam1}" Width="Auto"/>
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🗑️ Удалить" 
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Margin="2" Padding="5,2" Width="Auto"
+                                Background="#FFf44336" Foreground="White"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Page>

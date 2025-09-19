@@ -6,11 +6,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <PackageIcon>Icon_app.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Icons\Знак_закрыть.png" />
     <None Remove="Icons\Знак_свернуть.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Icons\Icon_app.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +34,13 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Icons\Знак_свернуть.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Icons\Icon_app.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
