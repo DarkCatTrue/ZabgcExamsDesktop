@@ -277,6 +277,21 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                         Audiences.Remove(audience);
                         if (SelectedItem == audience) SelectedItem = null;
                     }
+                    else if (itemToDelete is Qualification qualification)
+                    {
+                        Qualifications.Remove(qualification);
+                        if (SelectedItem == qualification) SelectedItem = null;
+                    }
+                    else if (itemToDelete is TypeOfExam typeOfExam)
+                    {
+                        TypeOfExams.Remove(typeOfExam);
+                        if (SelectedItem == typeOfExam) SelectedItem = null;
+                    }
+                    else if (itemToDelete is Discipline discipline)
+                    {
+                        Disciplines.Remove(discipline);
+                        if (SelectedItem == discipline) SelectedItem = null;
+                    }
 
                     _context.SaveChanges();
                     MessageBox.Show("Запись удалена успешно!", "Успех",
