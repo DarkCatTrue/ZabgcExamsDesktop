@@ -24,6 +24,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private ObservableCollection<Qualification> _qualifications;
         private ObservableCollection<TypeOfExam> _typeOfExams;
         private object _selectedItem;
+        private object _selectedDepartment;
+        private string _enterGroup;
         private bool _isEditing = false;
 
 
@@ -42,6 +44,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ICommand EditCommand { get; }
         public ICommand SaveCommand { get; }
         public ICommand AddCommand { get; }
+        public ICommand AddNewGroupCommand { get; }
+
 
         public object SelectedItem
         {
@@ -51,6 +55,17 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 _selectedItem = value;
                 OnPropertyChanged();
                 CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        public int? SelectedDepartmentId { get; set; }
+
+        public string EnterGroup
+        {
+            get => _enterGroup;
+            set
+            {
+                _enterGroup = value;
+                OnPropertyChanged();
             }
         }
         public DbViewModel(ApplicationDbContext context)
@@ -63,6 +78,45 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             EditCommand = new RelayCommand(EditItem);
             SaveCommand = new RelayCommand(SaveChanges);
             AddCommand = new RelayCommand(AddNewItem);
+            AddNewGroupCommand = new RelayCommand(AddNewGroup);
+        }
+
+        private void AddNewGroup(object parameter)
+        {
+            var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
+
+            if (string.IsNullOrWhiteSpace(EnterGroup))
+            {
+                MessageBox.Show("Введите название группы!");
+                return;
+            }
+
+            if (SelectedDepartmentId == null)
+            {
+                MessageBox.Show("Выберите отделение!");
+                return;
+            }
+
+            try
+            {
+                var newGroup = new Group
+                {
+                    NameOfGroup = EnterGroup.Trim(),
+                    IdDepartment = department.IdDepartment,
+                };
+
+                _context.Groups.Add(newGroup);
+                _context.SaveChanges();
+
+                MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!");
+
+                EnterGroup = string.Empty;
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при добавлении: {ex.Message}");
+            }
         }
 
         public void BackToExamsPage(object parameter)
@@ -226,7 +280,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             if (DepartmentsVisibility == Visibility.Visible)
                 AddItem<Department>(_context.Departments, Departments);
             else if (GroupsVisibility == Visibility.Visible)
-                AddItem<Group>(_context.Groups, Groups);
+                AddGroup();
             else if (AudiencesVisibility == Visibility.Visible)
                 AddItem<Audience>(_context.Audiences, Audiences);
             else if (TeachersVisibility == Visibility.Visible)
@@ -246,6 +300,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             collection.Add(newItem);
             SelectedItem = newItem;
             IsEditing = true;
+        }
+
+        private void AddGroup()
+        {
+            GroupAddWindow groupAddWindow = new GroupAddWindow();
+            groupAddWindow.Show();
         }
 
         private void DeleteItem(object parameter)
@@ -339,6 +399,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
             Qualifications = new ObservableCollection<Qualification>(_context.Qualifications.ToList());
             TypeOfExams = new ObservableCollection<TypeOfExam>(_context.TypeOfExams.ToList());
+            OnPropertyChanged(nameof(Departments));
+            OnPropertyChanged(nameof(Groups));
         }
 
         private void ShowGrid(object parameter)
@@ -366,7 +428,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                         break;
                     case "Teachers":
                         TeachersVisibility = Visibility.Visible;
-                        break;  
+                        break;
                     case "Disciplines":
                         DisciplinesVisibility = Visibility.Visible;
                         break;
