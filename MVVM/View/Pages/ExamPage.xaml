@@ -9,7 +9,7 @@
       d:DesignHeight="400" d:DesignWidth="350"
       Title="ExamPage"
       Background="#323a47">
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -44,9 +44,19 @@
         <ComboBox Grid.Column="1" Grid.Row="5" Name="Audience" Height="30" ItemsSource="{Binding Audience}" DisplayMemberPath="NumberAudience" SelectedItem="{Binding SelectedAudience}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="6" Name="Discipline" Height="30" ItemsSource="{Binding Discipline}" DisplayMemberPath="NameDiscipline" SelectedItem="{Binding SelectedDiscipline}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="7" Name="Qualification" Height="30" ItemsSource="{Binding Qualification}" DisplayMemberPath="NameQualification" SelectedItem="{Binding SelectedQualification}" IsTextSearchEnabled="False" IsEditable="True"/>
-        <ComboBox Grid.Column="2" x:Name="Teachers" ItemsSource="{Binding Teacher}" DisplayMemberPath="FullName" SelectedItem="{Binding SelectedTeacher}" Grid.Row="8"/>
-        <DatePicker Grid.Column="1" Grid.Row="9" Name="TimeEvent" Language="RU" Foreground="White" SelectedDate="{Binding DatePickerText}" Width="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <md:TimePicker Grid.Column="1" Grid.Row="9" Foreground="White" Is24Hours="True" Width="60" Text="{Binding TimePickerText}" VerticalAlignment="Center" HorizontalAlignment="Right" />
-        <Button Content="Добавить запись" Grid.Row="10" Grid.ColumnSpan="2" Command="{Binding AddExamCommand}" Height="Auto" VerticalAlignment="Stretch"/>
+       <ListBox Grid.Column="1" Grid.Row="8" 
+     x:Name="TeachersListBox"
+     ItemsSource="{Binding Teacher}"
+     SelectionMode="Multiple">
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <CheckBox Content="{Binding FullName}" 
+                 IsChecked="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}"/>
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+</ListBox>
+        <DatePicker Grid.Column="1" Grid.Row="9" Name="DateEvent" Language="RU" Foreground="White" Width="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <md:TimePicker Grid.Column="1" Grid.Row="9" Name="TimeEvent" Foreground="White" Is24Hours="True" Width="60" SelectedTimeFormat="Long" VerticalAlignment="Center" HorizontalAlignment="Right" />
+        <Button Content="Добавить запись" Grid.Row="10" Grid.ColumnSpan="2" Click="SaveButton_Click" Height="Auto" VerticalAlignment="Stretch" Cursor="Hand"/>
     </Grid>
 </Page>

@@ -1,11 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.DirectoryServices;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Input;
 using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
@@ -34,8 +30,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Qualification _selectedQualification;
         private Discipline _selectedDiscipline;
 
-        public ICommand AddExamCommand { get; set; }
-
         public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
         public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
         public ObservableCollection<Group> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
@@ -45,27 +39,10 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ObservableCollection<TypeOfExam> TypeExam { get => typeExams; set { typeExams = value; OnPropertyChanged(); } }
         public ObservableCollection<Qualification> Qualification { get => qualifications; set { qualifications = value; OnPropertyChanged(); } }
         public ObservableCollection<Discipline> Discipline { get => disciplines; set { disciplines = value; OnPropertyChanged(); } }
-
-        private DateTime? _datePickerText;
-        private string _timePickerText;
-
-        public DateTime? DatePickerText
-        {
-            get => _datePickerText; set
-            {
-                _datePickerText = value; OnPropertyChanged();
-            }
-        }
-        public string TimePickerText
-        {
-            get => _timePickerText; set { _timePickerText = value; OnPropertyChanged(); }
-        }
-
         public Department SelectedDepartment
         {
             get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
         }
-
         public Group SelectedGroup
         {
             get => _selectedGroup; set { _selectedGroup = value; OnPropertyChanged(); }
@@ -102,7 +79,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public AddExamModel()
         {
             LoadDB();
-            AddExamCommand = new RelayCommand(CreateExam);
         }
 
         public async void LoadDB()
@@ -134,51 +110,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private async void CreateExam(object parameter)
-        {
-            try
-            {
-                using var context = new ApplicationDbContext();
-                DateTime Date = Convert.ToDateTime(DatePickerText);
-                string DateText = Date.ToString("yyyy-MM-dd");
-                string TimeText = TimePickerText;
-                DateTime datePart = DateTime.ParseExact(DateText, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-                TimeSpan timePart = TimeSpan.ParseExact(TimeText, "hh\\:mm", CultureInfo.InvariantCulture);
-                DateTime Fulldate = datePart.Add(timePart);
-                var newExam = new Exam
-                {
-                    IdGroup = SelectedGroup?.IdGroup,
-                    IdDiscipline = SelectedDiscipline?.IdDiscipline,
-                    IdTypeOfLesson = SelectedLesson?.IdTypeOfLesson,
-                    IdTypeOfExam = SelectedTypeOfExam?.IdTypeOfExam,
-                    IdQualification = SelectedQualification?.IdQualification,
-                    DateEvent = Fulldate,
-                };
-
-                if (SelectedTeacher != null)
-                {
-                    var teacher = context.Teachers.Find(SelectedTeacher.IdTeacher);
-                    if (teacher != null)
-                        newExam.IdTeachers.Add(teacher);
-                }
-
-                if (SelectedAudience != null)
-                {
-                    var audience = context.Audiences.Find(SelectedAudience.IdAudience);
-                    if (audience != null)
-                        newExam.IdAudiences.Add(audience);
-                }
-                context.Exams.Add(newExam);
-                context.SaveChanges();
-                MessageBox.Show("Добавлена новая запись", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
         private void UpdateGroups()
         {
             if (SelectedDepartment == null)

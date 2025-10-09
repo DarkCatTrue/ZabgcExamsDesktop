@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 
@@ -49,4 +47,5 @@ public partial class Exam : INotifyPropertyChanged
     public virtual ICollection<Audience> IdAudiences { get; set; } = new List<Audience>();
 
     public virtual ICollection<Teacher> IdTeachers { get; set; } = new List<Teacher>();
+
 }
