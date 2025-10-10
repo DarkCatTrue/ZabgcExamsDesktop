@@ -20,27 +20,15 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Department> Departments { get; set; }
 
+    public virtual DbSet<DepartmentOwner> DepartmentOwners { get; set; }
+
     public virtual DbSet<Discipline> Disciplines { get; set; }
 
     public virtual DbSet<Exam> Exams { get; set; }
 
-    public virtual DbSet<GetAllAudience> GetAllAudiences { get; set; }
-
-    public virtual DbSet<GetAllDepartment> GetAllDepartments { get; set; }
-
-    public virtual DbSet<GetAllDiscipline> GetAllDisciplines { get; set; }
-
-    public virtual DbSet<GetAllExam> GetAllExams { get; set; }
-
-    public virtual DbSet<GetAllGroup> GetAllGroups { get; set; }
-
-    public virtual DbSet<GetAllTeacher> GetAllTeachers { get; set; }
-
-    public virtual DbSet<GetTypeExam> GetTypeExams { get; set; }
-
-    public virtual DbSet<GetTypeLesson> GetTypeLessons { get; set; }
-
     public virtual DbSet<Group> Groups { get; set; }
+
+    public virtual DbSet<Manager> Managers { get; set; }
 
     public virtual DbSet<Qualification> Qualifications { get; set; }
 
@@ -58,36 +46,17 @@ public partial class ApplicationDbContext : DbContext
     {
         modelBuilder.Entity<Audience>(entity =>
         {
-            entity.HasKey(e => e.IdAudience).HasName("PK__Audience__80EB004116F980A6");
+            entity.HasKey(e => e.IdAudience).HasName("PK__Audience__80EB00415B92E8D7");
 
             entity.ToTable("Audience");
 
             entity.Property(e => e.IdAudience).HasColumnName("id_audience");
             entity.Property(e => e.NumberAudience).HasColumnName("Number_audience");
-
-            entity.HasMany(d => d.IdExams).WithMany(p => p.IdAudiences)
-                .UsingEntity<Dictionary<string, object>>(
-                    "AudienceExam",
-                    r => r.HasOne<Exam>().WithMany()
-                        .HasForeignKey("IdExam")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Audience___id_ex__6FE99F9F"),
-                    l => l.HasOne<Audience>().WithMany()
-                        .HasForeignKey("IdAudience")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Audience___id_au__6EF57B66"),
-                    j =>
-                    {
-                        j.HasKey("IdAudience", "IdExam").HasName("Audience_exam_pk");
-                        j.ToTable("Audience_exam");
-                        j.IndexerProperty<int>("IdAudience").HasColumnName("id_audience");
-                        j.IndexerProperty<int>("IdExam").HasColumnName("id_exam");
-                    });
         });
 
         modelBuilder.Entity<Department>(entity =>
         {
-            entity.HasKey(e => e.IdDepartment).HasName("PK__Departme__0FC1D23F53A4E6F7");
+            entity.HasKey(e => e.IdDepartment).HasName("PK__Departme__0FC1D23FC9D3B7B4");
 
             entity.ToTable("Department");
 
@@ -96,6 +65,24 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("Name_of_department");
+        });
+
+        modelBuilder.Entity<DepartmentOwner>(entity =>
+        {
+            entity.HasKey(e => e.IdOwner);
+
+            entity.ToTable("DepartmentOwner");
+
+            entity.Property(e => e.IdOwner).HasColumnName("id_owner");
+            entity.Property(e => e.IdDepartment).HasColumnName("id_department");
+            entity.Property(e => e.OwnerName)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("owner_name");
+
+            entity.HasOne(d => d.IdDepartmentNavigation).WithMany(p => p.DepartmentOwners)
+                .HasForeignKey(d => d.IdDepartment)
+                .HasConstraintName("FK_DepartmentOwner_Department");
         });
 
         modelBuilder.Entity<Discipline>(entity =>
@@ -112,7 +99,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Exam>(entity =>
         {
-            entity.HasKey(e => e.IdExam).HasName("PK__Exam__5AF44319496340CD");
+            entity.HasKey(e => e.IdExam).HasName("PK__Exam__5AF443195C19EC53");
 
             entity.ToTable("Exam");
 
@@ -120,152 +107,41 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.DateEvent)
                 .HasColumnType("datetime")
                 .HasColumnName("date_event");
+            entity.Property(e => e.IdAudience).HasColumnName("id_audience");
             entity.Property(e => e.IdDiscipline).HasColumnName("id_discipline");
             entity.Property(e => e.IdGroup).HasColumnName("id_group");
             entity.Property(e => e.IdQualification).HasColumnName("id_qualification");
             entity.Property(e => e.IdTypeOfExam).HasColumnName("id_type_of_exam");
             entity.Property(e => e.IdTypeOfLesson).HasColumnName("id_type_of_lesson");
 
-            entity.HasOne(d => d.IdDisciplineNavigation).WithMany(p => p.Exams)
-                .HasForeignKey(d => d.IdDiscipline)
-                .HasConstraintName("FK_Disciplines_Exams");
+            entity.HasOne(d => d.IdAudienceNavigation).WithMany(p => p.Exams)
+                .HasForeignKey(d => d.IdAudience)
+                .HasConstraintName("FK_Exam_Audience");
 
             entity.HasOne(d => d.IdGroupNavigation).WithMany(p => p.Exams)
                 .HasForeignKey(d => d.IdGroup)
-                .HasConstraintName("FK_Groups_Exams");
+                .HasConstraintName("FK_Exam_Group");
 
             entity.HasOne(d => d.IdQualificationNavigation).WithMany(p => p.Exams)
                 .HasForeignKey(d => d.IdQualification)
-                .HasConstraintName("FK_qualification_exam");
+                .HasConstraintName("FK_Exam_Qualification");
 
             entity.HasOne(d => d.IdTypeOfExamNavigation).WithMany(p => p.Exams)
                 .HasForeignKey(d => d.IdTypeOfExam)
-                .HasConstraintName("FK_Type_of_exam_Exams");
+                .HasConstraintName("FK_Exam_Type_of_exam");
+
+            entity.HasOne(d => d.IdDisciplineNavigation).WithMany(p => p.Exams)
+                .HasForeignKey(d => d.IdTypeOfLesson)
+                .HasConstraintName("FK_Exam_Discipline1");
 
             entity.HasOne(d => d.IdTypeOfLessonNavigation).WithMany(p => p.Exams)
                 .HasForeignKey(d => d.IdTypeOfLesson)
-                .HasConstraintName("FK_Type_of_lesson_Exams");
-        });
-
-        modelBuilder.Entity<GetAllAudience>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllAudiences");
-
-            entity.Property(e => e.NumberAudience).HasColumnName("Number_audience");
-        });
-
-        modelBuilder.Entity<GetAllDepartment>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllDepartments");
-
-            entity.Property(e => e.NameOfDepartment)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Name_of_department");
-        });
-
-        modelBuilder.Entity<GetAllDiscipline>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllDisciplines");
-
-            entity.Property(e => e.NameDiscipline)
-                .IsUnicode(false)
-                .HasColumnName("Name_discipline");
-        });
-
-        modelBuilder.Entity<GetAllExam>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllExams");
-
-            entity.Property(e => e.Department)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.ExamId).HasColumnName("Exam_ID");
-            entity.Property(e => e.GroupName)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Group_Name");
-            entity.Property(e => e.NameDiscipline)
-                .IsUnicode(false)
-                .HasColumnName("Name_discipline");
-            entity.Property(e => e.NumberAudience).HasColumnName("Number_audience");
-            entity.Property(e => e.TeacherName)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Teacher_Name");
-            entity.Property(e => e.TypeOfExam)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Type_of_exam");
-            entity.Property(e => e.TypeOfLesson)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Type_of_lesson");
-        });
-
-        modelBuilder.Entity<GetAllGroup>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllGroups");
-
-            entity.Property(e => e.NameDepartment)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Name_department");
-            entity.Property(e => e.NameGroup)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Name_group");
-        });
-
-        modelBuilder.Entity<GetAllTeacher>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetAllTeachers");
-
-            entity.Property(e => e.FullName)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Full_name");
-        });
-
-        modelBuilder.Entity<GetTypeExam>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetTypeExams");
-
-            entity.Property(e => e.TypeOfExam)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Type_of_exam");
-        });
-
-        modelBuilder.Entity<GetTypeLesson>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("GetTypeLessons");
-
-            entity.Property(e => e.TypeOfLesson)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("Type_of_lesson");
+                .HasConstraintName("FK_Exam_Type_of_lesson");
         });
 
         modelBuilder.Entity<Group>(entity =>
         {
-            entity.HasKey(e => e.IdGroup).HasName("PK__Group__8BE8BA1BA749B929");
+            entity.HasKey(e => e.IdGroup).HasName("PK__Group__8BE8BA1BD972474B");
 
             entity.ToTable("Group");
 
@@ -278,12 +154,28 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.IdDepartmentNavigation).WithMany(p => p.Groups)
                 .HasForeignKey(d => d.IdDepartment)
-                .HasConstraintName("FK_Departments_Groups");
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_Group_Department");
+        });
+
+        modelBuilder.Entity<Manager>(entity =>
+        {
+            entity.HasKey(e => e.IdManager);
+
+            entity.Property(e => e.IdManager).HasColumnName("id_manager");
+            entity.Property(e => e.FullName)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("full_name");
+            entity.Property(e => e.Post)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("post");
         });
 
         modelBuilder.Entity<Qualification>(entity =>
         {
-            entity.HasKey(e => e.IdQualification).HasName("PK__Qualific__DDDA3230D4EFBC89");
+            entity.HasKey(e => e.IdQualification).HasName("PK__Qualific__DDDA3230C95692A1");
 
             entity.ToTable("Qualification");
 
@@ -296,7 +188,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Teacher>(entity =>
         {
-            entity.HasKey(e => e.IdTeacher).HasName("PK__Teacher__3BAEF8F97452EB99");
+            entity.HasKey(e => e.IdTeacher).HasName("PK__Teacher__3BAEF8F9173AC2E4");
 
             entity.ToTable("Teacher");
 
@@ -311,12 +203,10 @@ public partial class ApplicationDbContext : DbContext
                     "TeacherExam",
                     r => r.HasOne<Exam>().WithMany()
                         .HasForeignKey("IdExam")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Teacher_e__id_ex__4D94879B"),
+                        .HasConstraintName("FK_Teacher_exam_Exam"),
                     l => l.HasOne<Teacher>().WithMany()
                         .HasForeignKey("IdTeacher")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Teacher_e__id_te__4CA06362"),
+                        .HasConstraintName("FK_Teacher_exam_Teacher"),
                     j =>
                     {
                         j.HasKey("IdTeacher", "IdExam").HasName("Teacher_exam_pk");
@@ -328,7 +218,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<TypeOfExam>(entity =>
         {
-            entity.HasKey(e => e.IdTypeOfExam).HasName("PK__Type_of___49A8A9EA085FC3FB");
+            entity.HasKey(e => e.IdTypeOfExam).HasName("PK__Type_of___49A8A9EA31289D85");
 
             entity.ToTable("Type_of_exam");
 
@@ -341,7 +231,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<TypeOfLesson>(entity =>
         {
-            entity.HasKey(e => e.IdTypeOfLesson).HasName("PK__Type_of___2BD18CF689BA452A");
+            entity.HasKey(e => e.IdTypeOfLesson).HasName("PK__Type_of___2BD18CF6C7B709CA");
 
             entity.ToTable("Type_of_lesson");
 

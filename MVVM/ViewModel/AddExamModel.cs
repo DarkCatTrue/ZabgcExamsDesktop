@@ -5,7 +5,6 @@ using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
-using Group = ZabgcExamsDesktop.MVVM.Model.DataBase.Models.Group;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {

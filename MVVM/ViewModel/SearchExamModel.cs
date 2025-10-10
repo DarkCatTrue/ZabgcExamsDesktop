@@ -10,7 +10,6 @@ using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
-using Group = ZabgcExamsDesktop.MVVM.Model.DataBase.Models.Group;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
@@ -123,7 +122,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 .Include(e => e.IdGroupNavigation)
                 .ThenInclude(e => e.IdDepartmentNavigation)
                 .Include(e => e.IdTeachers)
-                .Include(e => e.IdAudiences)
+                .Include(e => e.IdAudienceNavigation)
                 .Include(e => e.IdDisciplineNavigation)
                 .Include(e => e.IdQualificationNavigation)
                 .Include(e => e.IdTypeOfExamNavigation)
@@ -163,7 +162,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 .Include(e => e.IdGroupNavigation)
                     .ThenInclude(g => g.IdDepartmentNavigation)
                 .Include(e => e.IdTeachers)
-                .Include(e => e.IdAudiences)
+                .Include(e => e.IdAudienceNavigation)
                 .Include(e => e.IdDisciplineNavigation)
                 .Include(e => e.IdQualificationNavigation)
                 .Include(e => e.IdTypeOfExamNavigation)
@@ -180,7 +179,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 query = query.Where(e => e.IdTeachers.Any(t => t.IdTeacher == SelectedTeacher.IdTeacher));
 
             if (SelectedAudience != null)
-                query = query.Where(e => e.IdAudiences.Any(a => a.IdAudience == SelectedAudience.IdAudience));
+                query = query.Where(e => e.IdAudience == SelectedAudience.IdAudience);
 
             var results = await query.ToListAsync();
             SearchResults = new ObservableCollection<Exam>(results);

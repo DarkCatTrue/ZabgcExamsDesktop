@@ -55,11 +55,12 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
 
                     var newExam = new Exam
                     {
-                        IdGroup = (Group.SelectedItem as Group)?.IdGroup,
-                        IdDiscipline = (Discipline.SelectedItem as Discipline)?.IdDiscipline,
-                        IdTypeOfLesson = (TypeLesson.SelectedItem as TypeOfLesson)?.IdTypeOfLesson,
-                        IdTypeOfExam = (TypeExam.SelectedItem as TypeOfExam)?.IdTypeOfExam,
-                        IdQualification = (Qualification.SelectedItem as Qualification)?.IdQualification,
+                        IdGroup = (Group.SelectedItem as Group).IdGroup,
+                        IdDiscipline = (Discipline.SelectedItem as Discipline).IdDiscipline,
+                        IdTypeOfLesson = (TypeLesson.SelectedItem as TypeOfLesson).IdTypeOfLesson,
+                        IdTypeOfExam = (TypeExam.SelectedItem as TypeOfExam).IdTypeOfExam,
+                        IdQualification = (Qualification.SelectedItem as Qualification).IdQualification,
+                        IdAudience = (Audience.SelectedItem as Audience).IdAudience,
                         DateEvent = Fulldate
                     };
 
@@ -70,13 +71,6 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                         var teacherProxy = new Teacher { IdTeacher = teacher.IdTeacher };
                         context.Teachers.Attach(teacherProxy);
                         newExam.IdTeachers.Add(teacherProxy);
-                    }
-
-                    if (selectedAudience != null)
-                    {
-                        var audienceProxy = new Audience { IdAudience = selectedAudience.IdAudience };
-                        context.Audiences.Attach(audienceProxy);
-                        newExam.IdAudiences.Add(audienceProxy);
                     }
 
                     context.SaveChanges();

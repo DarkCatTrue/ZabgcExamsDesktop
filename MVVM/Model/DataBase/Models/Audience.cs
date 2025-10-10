@@ -9,5 +9,5 @@ public partial class Audience
 
     public int? NumberAudience { get; set; }
 
-    public virtual ICollection<Exam> IdExams { get; set; } = new List<Exam>();
+    public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();
 }

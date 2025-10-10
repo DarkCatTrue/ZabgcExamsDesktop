@@ -15,7 +15,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary>
                     <converters:TeachersConverter x:Key="TeachersConverter"/>
-                    <converters:AudiencesConverter x:Key="AudiencesConverter"/>
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
@@ -37,10 +36,10 @@
         </Grid.ColumnDefinitions>
         <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}" Height="Auto"/>
         <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="3" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
-        <ComboBox Grid.Column="0" Grid.Row="3" Name="Department" ItemsSource="{Binding Department}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment}"/>
-        <ComboBox Grid.Column="1" Grid.Row="3" Name="Group" IsEditable="True" ItemsSource="{Binding FilteredGroups}" DisplayMemberPath="NameOfGroup" SelectedValuePath="IdGroup" SelectedItem="{Binding SelectedGroup}"/>
-        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" Name="Teacher" ItemsSource="{Binding Teacher}" DisplayMemberPath="FullName" SelectedValuePath="IdTeacher" SelectedItem="{Binding SelectedTeacher}"/>
-        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" Name="Audience" ItemsSource="{Binding Audience}" DisplayMemberPath="NumberAudience" SelectedItem="{Binding SelectedAudience}"/>
+        <ComboBox Grid.Column="0" Grid.Row="3" x:Name="DepartmentsComboBox" ItemsSource="{Binding Department, Mode = OneWay}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment, Mode=TwoWay}"/>
+        <ComboBox Grid.Column="1" Grid.Row="3" x:Name="GroupsComboBox" IsEditable="True" ItemsSource="{Binding FilteredGroups, Mode = OneWay}" DisplayMemberPath="NameOfGroup" SelectedValuePath="IdGroup" SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"/>
+        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" ItemsSource="{Binding Teacher, Mode=OneWay}" DisplayMemberPath="FullName" SelectedValuePath="IdTeacher" SelectedItem="{Binding SelectedTeacher, Mode=TwoWay}"/>
+        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" ItemsSource="{Binding Audience, Mode=OneWay}" DisplayMemberPath="NumberAudience" SelectedValuePath="IdAudience" SelectedItem="{Binding SelectedAudience, Mode=TwoWay}"/>
         <TextBlock Text="Отделение" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Группа" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Преподаватель" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
@@ -77,8 +76,8 @@
                 <DataGridTextColumn Header="Преподаватели" 
                            Binding="{Binding IdTeachers, Converter={StaticResource TeachersConverter}}"/>
 
-                <DataGridTextColumn Header="Аудитории" 
-                           Binding="{Binding IdAudiences, Converter={StaticResource AudiencesConverter}}"/>
+                <DataGridTextColumn Header="Аудитория" 
+                           Binding="{Binding IdAudienceNavigation.NumberAudience}"/>
 
                 <DataGridTextColumn Header="Дата/время" 
                            Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>

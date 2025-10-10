@@ -2,8 +2,8 @@
 using System.Windows.Controls;
 using Microsoft.EntityFrameworkCore;
 using System.Windows.Data;
-using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.ViewModel;
+using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages
 {
