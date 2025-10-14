@@ -33,7 +33,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ICommand ClearSearchCommand { get; set; }
         public ICommand SaveRowCommand { get; set; }
         public ICommand DeleteRowCommand { get; set; }
-
+        public ICommand CreateResultCommand { get; set; }
 
         public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
         public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
@@ -101,6 +101,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             EditDataBaseCommand = new RelayCommand(EditDataBase);
             SearchCommand = new RelayCommand(Search);
             ClearSearchCommand = new RelayCommand(ClearSearch);
+            CreateResultCommand = new RelayCommand(GoToResultPage);
         }
 
         public async void LoadDB()
@@ -134,6 +135,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void GoToResultPage(object parameter)
+        {
+            Page resultPage = new ResultPage();
+            SearchExamWindow.pageManager.ChangePage(resultPage);
         }
 
         private void UpdateGroups()

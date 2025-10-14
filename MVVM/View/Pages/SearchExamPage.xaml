@@ -35,7 +35,8 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}" Height="Auto"/>
-        <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="3" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
+        <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
+        <Button Name="CreateResult" Grid.Column="4" Grid.Row="1" Command="{Binding CreateResultCommand}" Content="Печать отчёта" Height="Auto"/>
         <ComboBox Grid.Column="0" Grid.Row="3" x:Name="DepartmentsComboBox" ItemsSource="{Binding Department, Mode = OneWay}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment, Mode=TwoWay}"/>
         <ComboBox Grid.Column="1" Grid.Row="3" x:Name="GroupsComboBox" IsEditable="True" ItemsSource="{Binding FilteredGroups, Mode = OneWay}" DisplayMemberPath="NameOfGroup" SelectedValuePath="IdGroup" SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"/>
         <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" ItemsSource="{Binding Teacher, Mode=OneWay}" DisplayMemberPath="FullName" SelectedValuePath="IdTeacher" SelectedItem="{Binding SelectedTeacher, Mode=TwoWay}"/>
