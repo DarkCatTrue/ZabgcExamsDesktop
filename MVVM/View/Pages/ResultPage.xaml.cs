@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.ViewModel;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages
 {
@@ -23,35 +24,97 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
         {
             var viewModel = DataContext as PrintResultModel;
             if (viewModel == null) return;
-            using var context = new ApplicationDbContext();
             var selectedDepartment = DepartmentComboBox.SelectedItem as Department;
             var selectedGroups = GroupsListBox.SelectedItems.Cast<Group>().ToList();
+            using var context = new ApplicationDbContext();
 
-            var query = context.Exams
-                .Include(e => e.IdGroupNavigation)
-                    .ThenInclude(g => g.IdDepartmentNavigation)
-                .Include(e => e.IdTeachers)
-                .Include(e => e.IdAudienceNavigation)
-                .Include(e => e.IdDisciplineNavigation)
-                .Include(e => e.IdQualificationNavigation)
-                .Include(e => e.IdTypeOfExamNavigation)
-                .Include(e => e.IdTypeOfLessonNavigation)
-                .AsQueryable();
-
-            if (selectedDepartment != null)
-                query = query.Where(e => e.IdGroupNavigation.IdDepartment == selectedDepartment.IdDepartment);
-
-            if (selectedGroups != null && selectedGroups.Any())
+            switch (viewModel.SelectedResult)
             {
-                var selectedGroupIds = selectedGroups.Select(g => g.IdGroup).ToList();
-                query = query.Where(e => selectedGroupIds.Contains(e.IdGroup));
+                case "Стандартный":
+                    var query = context.Exams
+                    .Include(e => e.IdGroupNavigation)
+                    .ThenInclude(g => g.IdDepartmentNavigation)
+                    .Include(e => e.IdTeachers)
+                    .Include(e => e.IdAudienceNavigation)
+                    .Include(e => e.IdDisciplineNavigation)
+                    .Include(e => e.IdQualificationNavigation)
+                    .Include(e => e.IdTypeOfExamNavigation)
+                    .Include(e => e.IdTypeOfLessonNavigation)
+                    .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "Стандартный");
+
+
+                    if (selectedDepartment != null)
+                        query = query.Where(e => e.IdGroupNavigation.IdDepartment == selectedDepartment.IdDepartment);
+
+                    if (selectedGroups != null && selectedGroups.Any())
+                    {
+                        var selectedGroupIds = selectedGroups.Select(g => g.IdGroup).ToList();
+                        query = query.Where(e => selectedGroupIds.Contains(e.IdGroup));
+                    }
+
+                    var results = await query.ToListAsync();
+
+                    viewModel.SearchResults = new ObservableCollection<Exam>(results);
+
+                    return;
+
+                case "По модулю":
+                    query = context.Exams
+                   .Include(e => e.IdGroupNavigation)
+                   .ThenInclude(g => g.IdDepartmentNavigation)
+                   .Include(e => e.IdTeachers)
+                   .Include(e => e.IdAudienceNavigation)
+                   .Include(e => e.IdDisciplineNavigation)
+                   .Include(e => e.IdQualificationNavigation)
+                   .Include(e => e.IdTypeOfExamNavigation)
+                   .Include(e => e.IdTypeOfLessonNavigation)
+                   .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "ПМ");
+
+
+                    if (selectedDepartment != null)
+                        query = query.Where(e => e.IdGroupNavigation.IdDepartment == selectedDepartment.IdDepartment);
+
+                    if (selectedGroups != null && selectedGroups.Any())
+                    {
+                        var selectedGroupIds = selectedGroups.Select(g => g.IdGroup).ToList();
+                        query = query.Where(e => selectedGroupIds.Contains(e.IdGroup));
+                    }
+
+                    results = await query.ToListAsync();
+
+                    viewModel.SearchResults = new ObservableCollection<Exam>(results);
+
+                    return;
+
+                case "Квалификационный":
+                    query = context.Exams
+                   .Include(e => e.IdGroupNavigation)
+                   .ThenInclude(g => g.IdDepartmentNavigation)
+                   .Include(e => e.IdTeachers)
+                   .Include(e => e.IdAudienceNavigation)
+                   .Include(e => e.IdDisciplineNavigation)
+                   .Include(e => e.IdQualificationNavigation)
+                   .Include(e => e.IdTypeOfExamNavigation)
+                   .Include(e => e.IdTypeOfLessonNavigation)
+                   .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "Квалификационный");
+                    
+                    if (selectedDepartment != null)
+                        query = query.Where(e => e.IdGroupNavigation.IdDepartment == selectedDepartment.IdDepartment);
+
+                    if (selectedGroups != null && selectedGroups.Any())
+                    {
+                        var selectedGroupIds = selectedGroups.Select(g => g.IdGroup).ToList();
+                        query = query.Where(e => selectedGroupIds.Contains(e.IdGroup));
+                    }
+
+                    results = await query.ToListAsync();
+
+                    viewModel.SearchResults = new ObservableCollection<Exam>(results);
+
+                    return;
+
             }
-
-            var results = await query.ToListAsync();
-
-            viewModel.SearchResults = new ObservableCollection<Exam>(results);
         }
-
         private void DelFromDataGridBtn_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             var viewModel = DataContext as PrintResultModel;

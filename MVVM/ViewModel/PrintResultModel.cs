@@ -1,15 +1,25 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
+using iText.Kernel.Pdf;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
+using iText.Kernel.Geom;
+using iText.Layout.Element;
+using iText.Layout;
+using iText.Layout.Properties;
+using TextAlignment = iText.Layout.Properties.TextAlignment;
+using iText.IO.Font;
+using static iText.StyledXmlParser.Css.Font.CssFontFace;
+using HorizontalAlignment = iText.Layout.Properties.HorizontalAlignment;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
@@ -43,7 +53,27 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ObservableCollection<TypeOfExam> TypeExam { get => typeExams; set { typeExams = value; OnPropertyChanged(); } }
         public ObservableCollection<Qualification> Qualification { get => qualifications; set { qualifications = value; OnPropertyChanged(); } }
         public ObservableCollection<Discipline> Discipline { get => disciplines; set { disciplines = value; OnPropertyChanged(); } }
-        
+
+
+        private string _selectedResult;
+
+        public List<string> ResultItems { get; } = new List<string>
+        {
+            "Стандартный",
+            "По модулю",
+            "Квалификационный"
+        };
+
+        public string SelectedResult
+        {
+            get => _selectedResult;
+            set
+            {
+                _selectedResult = value;
+                OnPropertyChanged(nameof(SelectedResult));
+            }
+        }
+
         public Department SelectedDepartment
         {
             get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
@@ -71,8 +101,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     exam.PropertyChanged += Exam_PropertyChanged;
                 }
                 OnPropertyChanged(nameof(SearchResults));
+                OnPropertyChanged(nameof(CanSaveToPdf));
             }
         }
+        public bool CanSaveToPdf => SearchResults?.Count > 0;
+
         private void Exam_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (sender is Exam exam)
@@ -90,6 +123,428 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             LoadDb();
             BackToSearch = new RelayCommand(BackToPage);
+            SaveToPDFCommand = new RelayCommand(ExecuteSaveToPdf);
+        }
+        private void ExecuteSaveToPdf(object parameter)
+        {
+            SaveToPdf(parameter);
+        }
+
+        private void SaveToPdf(object parameter)
+        {
+            if (SearchResults == null || !SearchResults.Any())
+            {
+                MessageBox.Show("Нет данных для сохранения в PDF", "Внимание");
+                return;
+            }
+
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF files (*.pdf)|*.pdf",
+                FileName = $"Расписание экзаменов {DateTime.Now:yyyy-MM-dd}",
+                DefaultExt = ".pdf"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (var writer = new PdfWriter(saveFileDialog.FileName))
+                    {
+                        using (var pdf = new PdfDocument(writer))
+                        {
+                            var document = new Document(pdf, PageSize.A4);
+                            document.SetMargins(40, 40, 40, 40);
+
+                            PdfFont fontNormal = PdfFontFactory.CreateFont(
+                                @"C:\Windows\Fonts\times.ttf",
+                                PdfEncodings.IDENTITY_H
+                            );
+
+                            PdfFont fontBold = PdfFontFactory.CreateFont(
+                                @"C:\Windows\Fonts\timesbd.ttf",
+                                PdfEncodings.IDENTITY_H
+                            );
+
+                            PdfFont fontItalic = PdfFontFactory.CreateFont(
+                                @"C:\Windows\Fonts\timesi.ttf",
+                                PdfEncodings.IDENTITY_H
+                            );
+
+                            // БЛОК "УТВЕРЖДАЮ" - ВЫРАВНИВАНИЕ ВПРАВО
+                            var approveTable = new Table(1)
+                                .SetWidth(UnitValue.CreatePercentValue(100))
+                                .SetHorizontalAlignment(HorizontalAlignment.RIGHT)
+                                .SetMarginBottom(20);
+
+                            // Все элементы блока выравниваем вправо
+                            approveTable.AddCell(new Cell()
+                                .Add(new Paragraph("Утверждаю:").SetFont(fontNormal).SetFontSize(12))
+                                .SetTextAlignment(TextAlignment.RIGHT)
+                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                .SetPadding(2));
+
+                            approveTable.AddCell(new Cell()
+                                .Add(new Paragraph("Директор").SetFont(fontNormal).SetFontSize(12))
+                                .SetTextAlignment(TextAlignment.RIGHT)
+                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                .SetPadding(2));
+
+                            approveTable.AddCell(new Cell()
+                                .Add(new Paragraph("ГАПОУ «ЗабГК им. М.И. Агошкова»").SetFont(fontNormal).SetFontSize(12))
+                                .SetTextAlignment(TextAlignment.RIGHT)
+                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                .SetPadding(2));
+
+                            approveTable.AddCell(new Cell()
+                                .Add(new Paragraph("_________ Н.В. Зыков").SetFont(fontNormal).SetFontSize(12))
+                                .SetTextAlignment(TextAlignment.RIGHT)
+                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                .SetPadding(2));
+
+                            approveTable.AddCell(new Cell()
+                                .Add(new Paragraph("«___» ________ 20___ г.").SetFont(fontNormal).SetFontSize(12))
+                                .SetTextAlignment(TextAlignment.RIGHT)
+                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                .SetPadding(2));
+
+                            document.Add(approveTable);
+
+                            document.Add(new Paragraph("\n"));
+
+                            switch (SelectedResult)
+                            {
+                                case "Стандартный":
+                                    document.Add(new Paragraph("Расписание экзаменов")
+                                    .SetFont(fontBold)
+                                    .SetFontSize(14)
+                                    .SetTextAlignment(TextAlignment.CENTER));
+                                    break;
+                                case "По модулю":
+                                    document.Add(new Paragraph("Расписание экзаменов по модулю")
+                                    .SetFont(fontBold)
+                                    .SetFontSize(14)
+                                    .SetTextAlignment(TextAlignment.CENTER));
+                                    break;
+                                case "Квалификационный":
+                                    document.Add(new Paragraph("Расписание экзаменов квалификационных")
+                                    .SetFont(fontBold)
+                                    .SetFontSize(14)
+                                    .SetTextAlignment(TextAlignment.CENTER));
+                                    break;
+                            }
+
+
+                            // Отделение (по центру)
+                            document.Add(new Paragraph("Отделение информационных технологий и экономики")
+                                .SetFont(fontItalic)
+                                .SetFontSize(12)
+                                .SetTextAlignment(TextAlignment.CENTER));
+
+                            document.Add(new Paragraph("Таблица")
+                             .SetFont(fontNormal)
+                             .SetFontSize(12)
+                             .SetTextAlignment(TextAlignment.RIGHT)
+                             .SetMarginTop(5)
+                             .SetMarginBottom(10));
+
+
+                            // Основная таблица с экзаменами
+                            switch (SelectedResult)
+                            {
+                                case "Стандартный" :
+                                    var mainTable = CreateExamsTable(SearchResults, fontNormal, fontBold);
+                                    document.Add(mainTable);
+                                    break;
+                                case "По модулю":
+                                    mainTable = CreateExamsTableModules(SearchResults, fontNormal, fontBold);
+                                    document.Add(mainTable);
+                                    break;
+                                case "Квалификационный":
+                                    mainTable = CreateExamsTableQualification(SearchResults, fontNormal, fontBold);
+                                    document.Add(mainTable);
+                                    break;
+                            }
+                            // Блок "Согласовано"
+                            document.Add(new Paragraph("Согласовано:")
+                                .SetFont(fontBold)
+                                .SetFontSize(12)
+                                .SetMarginTop(20));
+
+                            var agreements = new[]
+                            {
+                        new { Name = "О.В. Деминова", Position = "Зам. директора по учебной работе" },
+                        new { Name = "С.Н. Лапина", Position = "Зав. отделением ИТ и Э" },
+                        new { Name = "М.Л. Бортникова", Position = "Заведующая учебной частью" }
+                    };
+
+                            foreach (var item in agreements)
+                            {
+                                // Создаем таблицу для каждой строки
+                                var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
+                                    .SetWidth(UnitValue.CreatePercentValue(100))
+                                    .SetMarginTop(5);
+
+                                // Имя слева
+                                lineTable.AddCell(new Cell()
+                                    .Add(new Paragraph(item.Position).SetFont(fontNormal))
+                                    .SetTextAlignment(TextAlignment.LEFT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(0));
+
+                                // Должность справа
+                                lineTable.AddCell(new Cell()
+                                    .Add(new Paragraph(item.Name).SetFont(fontNormal))
+                                    .SetTextAlignment(TextAlignment.RIGHT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(0));
+
+                                document.Add(lineTable);
+                            }
+
+                            document.Close();
+                        }
+                    }
+
+                    MessageBox.Show($"Файл успешно сохранен: {saveFileDialog.FileName}", "Успех");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при сохранении PDF: {ex.Message}", "Ошибка");
+                }
+            }
+        }
+
+        private Table CreateExamsTableQualification(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
+        {
+            // Таблица с фиксированными ширинами колонок
+            var table = new Table(new float[] { 2, 2, 3, 2, 2 })
+                .SetWidth(UnitValue.CreatePercentValue(100))
+                .SetMarginTop(10)
+                .SetMarginBottom(10);
+
+            // Заголовки таблицы
+            var headers = new[]
+            {
+        "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК"
+    };
+
+            foreach (var header in headers)
+            {
+                var cell = new Cell()
+                    .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
+                    .SetPadding(8);
+                table.AddHeaderCell(cell);
+            }
+
+            // Данные таблицы
+            foreach (var exam in exams.OrderBy(e => e.DateEvent))
+            {
+                // Дата (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Группа (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdGroupNavigation?.NameOfGroup ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Дисциплина (по центру)
+                var disciplineText = $"{exam.IdDisciplineNavigation?.NameDiscipline ?? ""}";
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(disciplineText)
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Аудитория (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdAudienceNavigation?.NumberAudience?.ToString() ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Преподаватели (по центру)
+                var teachers = exam.IdTeachers?.Any() == true ?
+                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                table.AddCell(new Cell()
+                .Add(new Paragraph(teachers)
+                    .SetFont(fontNormal)
+                    .SetFontSize(9))
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(6));
+            }
+
+            return table;
+        }
+
+        private Table CreateExamsTableModules(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
+        {
+            // Таблица с фиксированными ширинами колонок
+            var table = new Table(new float[] { 2, 2, 3, 2, 2 })
+                .SetWidth(UnitValue.CreatePercentValue(100))
+                .SetMarginTop(10)
+                .SetMarginBottom(10);
+
+            // Заголовки таблицы
+            var headers = new[]
+            {
+        "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК"
+    };
+
+            foreach (var header in headers)
+            {
+                var cell = new Cell()
+                    .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
+                    .SetPadding(8);
+                table.AddHeaderCell(cell);
+            }
+
+            // Данные таблицы
+            foreach (var exam in exams.OrderBy(e => e.DateEvent))
+            {
+                // Дата (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Группа (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdGroupNavigation?.NameOfGroup ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Дисциплина (по центру)
+                var disciplineText = $"{exam.IdDisciplineNavigation?.NameDiscipline ?? ""}";
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(disciplineText)
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Аудитория (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdAudienceNavigation?.NumberAudience?.ToString() ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Преподаватели (по центру)
+                var teachers = exam.IdTeachers?.Any() == true ?
+                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                table.AddCell(new Cell()
+                .Add(new Paragraph(teachers)
+                    .SetFont(fontNormal)
+                    .SetFontSize(9))
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(6));
+            }
+
+            return table;
+        }
+
+
+
+        private Table CreateExamsTable(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
+        {
+            // Таблица с фиксированными ширинами колонок
+            var table = new Table(new float[] { 2, 2, 2, 3, 2, 2 })
+                .SetWidth(UnitValue.CreatePercentValue(100))
+                .SetMarginTop(10)
+                .SetMarginBottom(10);
+
+            // Заголовки таблицы
+            var headers = new[]
+            {
+        "Дата", "Группа", "Консультация/Экзамен", "Дисциплина, МДК", "Аудитория", "Члены ЭК"
+    };
+
+            foreach (var header in headers)
+            {
+                var cell = new Cell()
+                    .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
+                    .SetPadding(8);
+                table.AddHeaderCell(cell);
+            }
+
+            // Данные таблицы
+            foreach (var exam in exams.OrderBy(e => e.DateEvent))
+            {
+                // Дата (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Группа (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdGroupNavigation?.NameOfGroup ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Тип занятия
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdTypeOfLessonNavigation.TypeOfLesson1 ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Дисциплина (по центру)
+                var disciplineText = $"{exam.IdDisciplineNavigation?.NameDiscipline ?? ""}";
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(disciplineText)
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+
+                // Аудитория (по центру)
+                table.AddCell(new Cell()
+                    .Add(new Paragraph(exam.IdAudienceNavigation?.NumberAudience?.ToString() ?? ""))
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6);
+
+                // Преподаватели (по центру)
+                var teachers = exam.IdTeachers?.Any() == true ?
+                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                    table.AddCell(new Cell()
+                    .Add(new Paragraph(teachers)
+                        .SetFont(fontNormal)
+                        .SetFontSize(9))
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetPadding(6));
+            }
+
+            return table;
         }
 
         private void BackToPage(object parameter)
@@ -130,6 +585,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void UpdateGroups()
         {

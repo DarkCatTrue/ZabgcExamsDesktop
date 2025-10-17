@@ -41,9 +41,28 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <Button x:Name="SearchBtn" Grid.Row="2" Grid.Column="2" Content="Поиск" Click="SearchBtn_Click"/>
-        <Button Grid.Row="2" Grid.Column="3" Content="Печать" Command="{Binding PrintResultCommand}"/>
-        <Button Grid.Row="2" Grid.Column="4" Content="Сохранить в PDF" Command="{Binding SaveToPDFCommand}"/>
+        <ComboBox 
+            Grid.Row="2"
+            Grid.Column="2"
+            SelectedItem="{Binding SelectedResult}"
+            ItemsSource="{Binding ResultItems}">
+        </ComboBox>
+        
+        <Button x:Name="SearchBtn" 
+                Grid.Row="2" 
+                Grid.Column="3"
+                Content="Поиск" 
+                Click="SearchBtn_Click">
+        </Button>
+
+        <Button 
+            Grid.Row="2"
+            Grid.Column="4" 
+            Content="Сохранить в PDF" 
+            Command="{Binding SaveToPDFCommand}" 
+            IsEnabled="{Binding CanSaveToPdf}">
+        </Button>
+
         <DataGrid
             x:Name="GridPrint"
             Grid.Row="3" 
