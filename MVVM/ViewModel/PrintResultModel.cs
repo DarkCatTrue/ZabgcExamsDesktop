@@ -149,7 +149,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 DefaultExt = ".pdf"
             };
 
-            if (SelectedDepartment == null && SelectedResult == null)
+            if (SelectedDepartment == null || SelectedResult == null)
             {
                 MessageBox.Show("Поле с выбранным отделением и поле с типом отчёта должны быть заполнены", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
