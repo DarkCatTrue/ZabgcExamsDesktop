@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -10,7 +9,6 @@ using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
 using iText.Kernel.Pdf;
-using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Kernel.Geom;
 using iText.Layout.Element;
@@ -18,7 +16,6 @@ using iText.Layout;
 using iText.Layout.Properties;
 using TextAlignment = iText.Layout.Properties.TextAlignment;
 using iText.IO.Font;
-using static iText.StyledXmlParser.Css.Font.CssFontFace;
 using HorizontalAlignment = iText.Layout.Properties.HorizontalAlignment;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
@@ -36,6 +33,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private ObservableCollection<Discipline> disciplines;
         private ObservableCollection<Group> _filteredGroups;
 
+        private ObservableCollection<DepartmentOwner> _departmentOwner;
+        private ObservableCollection<Manager> _managers;
+
         private Department _selectedDepartment;
         private Group _selectedGroup;
         private Exam _selectedExam;
@@ -43,6 +43,10 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private ObservableCollection<Exam> _searchResults;
         private HashSet<Exam> _modifiedExams = new HashSet<Exam>();
+
+
+        public ObservableCollection<DepartmentOwner> DepartmentOwners { get => _departmentOwner; set { _departmentOwner = value; OnPropertyChanged(); } }
+        public ObservableCollection<Manager> Managers { get => _managers; set { _managers = value; OnPropertyChanged(); } }
 
         public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
         public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
@@ -134,7 +138,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             if (SearchResults == null || !SearchResults.Any())
             {
-                MessageBox.Show("Нет данных для сохранения в PDF", "Внимание");
+                MessageBox.Show("Нет данных для сохранения в PDF", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -145,175 +149,290 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 DefaultExt = ".pdf"
             };
 
-            if (saveFileDialog.ShowDialog() == true)
+            if (SelectedDepartment == null && SelectedResult == null)
             {
-                try
+                MessageBox.Show("Поле с выбранным отделением и поле с типом отчёта должны быть заполнены", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            else
+            {
+                if (saveFileDialog.ShowDialog() == true)
                 {
-                    using (var writer = new PdfWriter(saveFileDialog.FileName))
+                    try
                     {
-                        using (var pdf = new PdfDocument(writer))
+                        using var context = new ApplicationDbContext();
+
+                        using (var writer = new PdfWriter(saveFileDialog.FileName))
                         {
-                            var document = new Document(pdf, PageSize.A4);
-                            document.SetMargins(40, 40, 40, 40);
-
-                            PdfFont fontNormal = PdfFontFactory.CreateFont(
-                                @"C:\Windows\Fonts\times.ttf",
-                                PdfEncodings.IDENTITY_H
-                            );
-
-                            PdfFont fontBold = PdfFontFactory.CreateFont(
-                                @"C:\Windows\Fonts\timesbd.ttf",
-                                PdfEncodings.IDENTITY_H
-                            );
-
-                            PdfFont fontItalic = PdfFontFactory.CreateFont(
-                                @"C:\Windows\Fonts\timesi.ttf",
-                                PdfEncodings.IDENTITY_H
-                            );
-
-                            // БЛОК "УТВЕРЖДАЮ" - ВЫРАВНИВАНИЕ ВПРАВО
-                            var approveTable = new Table(1)
-                                .SetWidth(UnitValue.CreatePercentValue(100))
-                                .SetHorizontalAlignment(HorizontalAlignment.RIGHT)
-                                .SetMarginBottom(20);
-
-                            // Все элементы блока выравниваем вправо
-                            approveTable.AddCell(new Cell()
-                                .Add(new Paragraph("Утверждаю:").SetFont(fontNormal).SetFontSize(12))
-                                .SetTextAlignment(TextAlignment.RIGHT)
-                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                .SetPadding(2));
-
-                            approveTable.AddCell(new Cell()
-                                .Add(new Paragraph("Директор").SetFont(fontNormal).SetFontSize(12))
-                                .SetTextAlignment(TextAlignment.RIGHT)
-                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                .SetPadding(2));
-
-                            approveTable.AddCell(new Cell()
-                                .Add(new Paragraph("ГАПОУ «ЗабГК им. М.И. Агошкова»").SetFont(fontNormal).SetFontSize(12))
-                                .SetTextAlignment(TextAlignment.RIGHT)
-                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                .SetPadding(2));
-
-                            approveTable.AddCell(new Cell()
-                                .Add(new Paragraph("_________ Н.В. Зыков").SetFont(fontNormal).SetFontSize(12))
-                                .SetTextAlignment(TextAlignment.RIGHT)
-                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                .SetPadding(2));
-
-                            approveTable.AddCell(new Cell()
-                                .Add(new Paragraph("«___» ________ 20___ г.").SetFont(fontNormal).SetFontSize(12))
-                                .SetTextAlignment(TextAlignment.RIGHT)
-                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                .SetPadding(2));
-
-                            document.Add(approveTable);
-
-                            document.Add(new Paragraph("\n"));
-
-                            switch (SelectedResult)
+                            using (var pdf = new PdfDocument(writer))
                             {
-                                case "Стандартный":
-                                    document.Add(new Paragraph("Расписание экзаменов")
-                                    .SetFont(fontBold)
-                                    .SetFontSize(14)
-                                    .SetTextAlignment(TextAlignment.CENTER));
-                                    break;
-                                case "По модулю":
-                                    document.Add(new Paragraph("Расписание экзаменов по модулю")
-                                    .SetFont(fontBold)
-                                    .SetFontSize(14)
-                                    .SetTextAlignment(TextAlignment.CENTER));
-                                    break;
-                                case "Квалификационный":
-                                    document.Add(new Paragraph("Расписание экзаменов квалификационных")
-                                    .SetFont(fontBold)
-                                    .SetFontSize(14)
-                                    .SetTextAlignment(TextAlignment.CENTER));
-                                    break;
-                            }
+                                var document = new Document(pdf, PageSize.A4);
+                                document.SetMargins(40, 40, 40, 40);
 
+                                PdfFont fontNormal = PdfFontFactory.CreateFont(
+                                    @"C:\Windows\Fonts\times.ttf",
+                                    PdfEncodings.IDENTITY_H
+                                );
 
-                            // Отделение (по центру)
-                            document.Add(new Paragraph("Отделение информационных технологий и экономики")
-                                .SetFont(fontItalic)
-                                .SetFontSize(12)
-                                .SetTextAlignment(TextAlignment.CENTER));
+                                PdfFont fontBold = PdfFontFactory.CreateFont(
+                                    @"C:\Windows\Fonts\timesbd.ttf",
+                                    PdfEncodings.IDENTITY_H
+                                );
 
-                            document.Add(new Paragraph("Таблица")
-                             .SetFont(fontNormal)
-                             .SetFontSize(12)
-                             .SetTextAlignment(TextAlignment.RIGHT)
-                             .SetMarginTop(5)
-                             .SetMarginBottom(10));
+                                PdfFont fontItalic = PdfFontFactory.CreateFont(
+                                    @"C:\Windows\Fonts\timesi.ttf",
+                                    PdfEncodings.IDENTITY_H
+                                );
 
-
-                            // Основная таблица с экзаменами
-                            switch (SelectedResult)
-                            {
-                                case "Стандартный" :
-                                    var mainTable = CreateExamsTable(SearchResults, fontNormal, fontBold);
-                                    document.Add(mainTable);
-                                    break;
-                                case "По модулю":
-                                    mainTable = CreateExamsTableModules(SearchResults, fontNormal, fontBold);
-                                    document.Add(mainTable);
-                                    break;
-                                case "Квалификационный":
-                                    mainTable = CreateExamsTableQualification(SearchResults, fontNormal, fontBold);
-                                    document.Add(mainTable);
-                                    break;
-                            }
-                            // Блок "Согласовано"
-                            document.Add(new Paragraph("Согласовано:")
-                                .SetFont(fontBold)
-                                .SetFontSize(12)
-                                .SetMarginTop(20));
-
-                            var agreements = new[]
-                            {
-                        new { Name = "О.В. Деминова", Position = "Зам. директора по учебной работе" },
-                        new { Name = "С.Н. Лапина", Position = "Зав. отделением ИТ и Э" },
-                        new { Name = "М.Л. Бортникова", Position = "Заведующая учебной частью" }
-                    };
-
-                            foreach (var item in agreements)
-                            {
-                                // Создаем таблицу для каждой строки
-                                var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
+                                // БЛОК "УТВЕРЖДАЮ" - ВЫРАВНИВАНИЕ ВПРАВО
+                                var approveTable = new Table(1)
                                     .SetWidth(UnitValue.CreatePercentValue(100))
-                                    .SetMarginTop(5);
+                                    .SetHorizontalAlignment(HorizontalAlignment.RIGHT)
+                                    .SetMarginBottom(20);
 
-                                // Имя слева
-                                lineTable.AddCell(new Cell()
-                                    .Add(new Paragraph(item.Position).SetFont(fontNormal))
-                                    .SetTextAlignment(TextAlignment.LEFT)
-                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                    .SetPadding(0));
-
-                                // Должность справа
-                                lineTable.AddCell(new Cell()
-                                    .Add(new Paragraph(item.Name).SetFont(fontNormal))
+                                // Все элементы блока выравниваем вправо
+                                approveTable.AddCell(new Cell()
+                                    .Add(new Paragraph("Утверждаю:").SetFont(fontNormal).SetFontSize(12))
                                     .SetTextAlignment(TextAlignment.RIGHT)
                                     .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                                    .SetPadding(0));
+                                    .SetPadding(2));
 
-                                document.Add(lineTable);
+
+                                approveTable.AddCell(new Cell()
+                                    .Add(new Paragraph("Директор").SetFont(fontNormal).SetFontSize(12))
+                                    .SetTextAlignment(TextAlignment.RIGHT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(2));
+
+                                approveTable.AddCell(new Cell()
+                                    .Add(new Paragraph("ГАПОУ «ЗабГК им. М.И. Агошкова»").SetFont(fontNormal).SetFontSize(12))
+                                    .SetTextAlignment(TextAlignment.RIGHT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(2));
+
+                                var Director = context.Managers.Where(m => m.IdManager == 1).Select(m => m.FullName).First();
+
+                                approveTable.AddCell(new Cell()
+                                    .Add(new Paragraph($"_________ {Director}").SetFont(fontNormal).SetFontSize(12))
+                                    .SetTextAlignment(TextAlignment.RIGHT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(2));
+
+                                approveTable.AddCell(new Cell()
+                                    .Add(new Paragraph("«___» ________ 20___ г.").SetFont(fontNormal).SetFontSize(12))
+                                    .SetTextAlignment(TextAlignment.RIGHT)
+                                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                    .SetPadding(2));
+
+                                document.Add(approveTable);
+
+                                document.Add(new Paragraph("\n"));
+
+                                switch (SelectedResult)
+                                {
+                                    case "Стандартный":
+                                        document.Add(new Paragraph("Расписание экзаменов")
+                                        .SetFont(fontBold)
+                                        .SetFontSize(14)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+                                    case "По модулю":
+                                        document.Add(new Paragraph("Расписание экзаменов по модулю")
+                                        .SetFont(fontBold)
+                                        .SetFontSize(14)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+                                    case "Квалификационный":
+                                        document.Add(new Paragraph("Расписание экзаменов квалификационных")
+                                        .SetFont(fontBold)
+                                        .SetFontSize(14)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+                                }
+
+
+                                switch (SelectedDepartment.NameOfDepartment)
+                                {
+                                    case "Информационное":
+                                        document.Add(new Paragraph("Отделение информационных технологий и экономики")
+                                        .SetFont(fontItalic)
+                                        .SetFontSize(12)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+
+                                    case "Горное":
+                                        document.Add(new Paragraph("Горное отделение")
+                                        .SetFont(fontItalic)
+                                        .SetFontSize(12)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+
+                                    case "Геолого-маркшейдерское":
+                                        document.Add(new Paragraph("Геолого-маркшейдерское отделение")
+                                        .SetFont(fontItalic)
+                                        .SetFontSize(12)
+                                        .SetTextAlignment(TextAlignment.CENTER));
+                                        break;
+                                }
+
+
+                                document.Add(new Paragraph("Таблица")
+                                 .SetFont(fontNormal)
+                                 .SetFontSize(12)
+                                 .SetTextAlignment(TextAlignment.RIGHT)
+                                 .SetMarginTop(5)
+                                 .SetMarginBottom(10));
+
+
+                                // Основная таблица с экзаменами
+                                switch (SelectedResult)
+                                {
+                                    case "Стандартный":
+                                        var mainTable = CreateExamsTable(SearchResults, fontNormal, fontBold);
+                                        document.Add(mainTable);
+                                        break;
+                                    case "По модулю":
+                                        mainTable = CreateExamsTableModules(SearchResults, fontNormal, fontBold);
+                                        document.Add(mainTable);
+                                        break;
+                                    case "Квалификационный":
+                                        mainTable = CreateExamsTableQualification(SearchResults, fontNormal, fontBold);
+                                        document.Add(mainTable);
+                                        break;
+                                }
+                                // Блок "Согласовано"
+                                document.Add(new Paragraph("Согласовано:")
+                                    .SetFont(fontBold)
+                                    .SetFontSize(12)
+                                    .SetMarginTop(20));
+
+
+                                var StudyWorkEmployeeName = context.Managers.Where(m => m.IdManager == 2).Select(m => m.FullName).First();
+                                var OwnerStudyDepartmentName = context.Managers.Where(m => m.IdManager == 3).Select(m => m.FullName).First();
+
+                                var StudyWorkEmployee = context.Managers.Where(m => m.IdManager == 2).Select(m => m.Post).First();
+                                var OwnerStudyDepartment = context.Managers.Where(m => m.IdManager == 3).Select(m => m.Post).First();
+
+
+                                switch (SelectedDepartment.NameOfDepartment)
+                                {
+                                    case "Информационное":
+                                        var DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 1).Select(d => d.OwnerName).First();
+                                        var agreements = new[]
+                                {
+                        new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
+                        new { Name = DepartmentOwner, Position = "Зав. отделением ИТ и Э" },
+                        new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
+                        };
+                                        foreach (var item in agreements)
+                                        {
+                                            // Создаем таблицу для каждой строки
+                                            var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
+                                                .SetWidth(UnitValue.CreatePercentValue(100))
+                                                .SetMarginTop(5);
+
+                                            // Имя слева
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Position).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.LEFT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            // Должность справа
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Name).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.RIGHT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            document.Add(lineTable);
+                                        }
+
+                                        document.Close();
+                                        break;
+
+                                    case "Горное":
+                                        DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 2).Select(d => d.OwnerName).First();
+                                        agreements = new[]
+                                {
+                         new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
+                        new { Name = DepartmentOwner, Position = "Зав. горным отделением" },
+                        new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
+                        };
+                                        foreach (var item in agreements)
+                                        {
+                                            // Создаем таблицу для каждой строки
+                                            var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
+                                                .SetWidth(UnitValue.CreatePercentValue(100))
+                                                .SetMarginTop(5);
+
+                                            // Имя слева
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Position).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.LEFT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            // Должность справа
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Name).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.RIGHT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            document.Add(lineTable);
+                                        }
+
+                                        document.Close();
+                                        break;
+
+                                    case "Геолого-маркшейдерское":
+                                        DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 3).Select(d => d.OwnerName).First();
+                                        agreements = new[]
+                                {
+                        new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
+                        new { Name = DepartmentOwner, Position = "Зав. Г-М отделением" },
+                        new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
+                        };
+                                        foreach (var item in agreements)
+                                        {
+                                            // Создаем таблицу для каждой строки
+                                            var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
+                                                .SetWidth(UnitValue.CreatePercentValue(100))
+                                                .SetMarginTop(5);
+
+                                            // Имя слева
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Position).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.LEFT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            // Должность справа
+                                            lineTable.AddCell(new Cell()
+                                                .Add(new Paragraph(item.Name).SetFont(fontNormal))
+                                                .SetTextAlignment(TextAlignment.RIGHT)
+                                                .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
+                                                .SetPadding(0));
+
+                                            document.Add(lineTable);
+                                        }
+
+                                        document.Close();
+                                        break;
+                                }
                             }
-
-                            document.Close();
                         }
-                    }
 
-                    MessageBox.Show($"Файл успешно сохранен: {saveFileDialog.FileName}", "Успех");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при сохранении PDF: {ex.Message}", "Ошибка");
+                        MessageBox.Show($"Файл успешно сохранен: {saveFileDialog.FileName}", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при сохранении PDF: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
         }
+
 
         private Table CreateExamsTableQualification(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
@@ -536,12 +655,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 // Преподаватели (по центру)
                 var teachers = exam.IdTeachers?.Any() == true ?
                     string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
-                    table.AddCell(new Cell()
-                    .Add(new Paragraph(teachers)
-                        .SetFont(fontNormal)
-                        .SetFontSize(9))
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetPadding(6));
+                table.AddCell(new Cell()
+                .Add(new Paragraph(teachers)
+                    .SetFont(fontNormal)
+                    .SetFontSize(9))
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetPadding(6));
             }
 
             return table;
