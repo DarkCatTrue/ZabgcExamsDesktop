@@ -42,7 +42,7 @@
         <ComboBox Grid.Column="1" Grid.Row="3" Name="Department" ItemsSource="{Binding Department}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment}" Height="30"/>
         <ComboBox Grid.Column="1" Grid.Row="4" Name="Group" Height="30" ItemsSource="{Binding FilteredGroups}" DisplayMemberPath="NameOfGroup" SelectedItem="{Binding SelectedGroup}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="5" Name="Audience" Height="30" ItemsSource="{Binding Audience}" DisplayMemberPath="NumberAudience" SelectedItem="{Binding SelectedAudience}" IsTextSearchEnabled="False" IsEditable="True"/>
-        <ComboBox Grid.Column="1" Grid.Row="6" Name="Discipline" Height="30" ItemsSource="{Binding Discipline}" DisplayMemberPath="NameDiscipline" SelectedItem="{Binding SelectedDiscipline}" IsTextSearchEnabled="False" IsEditable="True"/>
+        <ComboBox Grid.Column="1" Grid.Row="6" Name="Discipline" Height="30" ItemsSource="{Binding Discipline}" DisplayMemberPath="NameDiscipline" SelectedValuePath="IdDiscipline" SelectedItem="{Binding SelectedDiscipline}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="7" Name="Qualification" Height="30" ItemsSource="{Binding Qualification}" DisplayMemberPath="NameQualification" SelectedItem="{Binding SelectedQualification}" IsTextSearchEnabled="False" IsEditable="True"/>
        <ListBox Grid.Column="1" Grid.Row="8" 
      x:Name="TeachersListBox"

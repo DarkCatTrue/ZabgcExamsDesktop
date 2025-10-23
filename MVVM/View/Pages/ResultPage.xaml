@@ -69,6 +69,7 @@
             Grid.ColumnSpan="5"
             AutoGenerateColumns="False"
             CanUserAddRows="False"
+            IsReadOnly="True"
             ItemsSource="{Binding SearchResults}">
             <DataGrid.Columns>
 

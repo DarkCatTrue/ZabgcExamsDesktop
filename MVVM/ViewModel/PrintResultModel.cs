@@ -682,22 +682,35 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 var teachers = await context.Teachers.ToListAsync();
                 var audiences = await context.Audiences.ToListAsync();
 
+                context.ChangeTracker.Clear();
+
+                var disciplines = context.Disciplines.ToDictionary(d => d.IdDiscipline, d => d);
+
                 Department = new ObservableCollection<Department>(departments);
                 Group = new ObservableCollection<Group>(groups);
                 Teacher = new ObservableCollection<Teacher>(teachers);
                 Audience = new ObservableCollection<Audience>(audiences);
                 FilteredGroups = new ObservableCollection<Group>(groups);
-                SearchResults = new ObservableCollection<Exam>(await context.Exams
+                var exams = context.Exams
                 .Include(e => e.IdGroupNavigation)
                 .ThenInclude(e => e.IdDepartmentNavigation)
-                .Include(e => e.IdTeachers)
-                .Include(e => e.IdAudienceNavigation)
-                .Include(e => e.IdDisciplineNavigation)
-                .Include(e => e.IdQualificationNavigation)
-                .Include(e => e.IdTypeOfExamNavigation)
                 .Include(e => e.IdTypeOfLessonNavigation)
+                .Include(e => e.IdTypeOfExamNavigation)
+                .Include(e => e.IdQualificationNavigation)
+                .Include(e => e.IdAudienceNavigation)
+                .Include(e => e.IdTeachers)
                 .AsNoTracking()
-                .ToListAsync());
+                .ToList();
+
+                foreach (var exam in exams)
+                {
+                    if (disciplines.ContainsKey(exam.IdDiscipline))
+                    {
+                        exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
+                    }
+                }
+
+                SearchResults = new ObservableCollection<Exam>(exams);
             }
             catch (Exception ex)
             {

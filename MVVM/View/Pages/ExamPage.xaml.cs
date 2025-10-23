@@ -1,6 +1,9 @@
-﻿using System.Globalization;
+﻿using System.Collections.ObjectModel;
+using System.DirectoryServices;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.ViewModel;
@@ -77,6 +80,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
 
                     MessageBox.Show("Добавлена новая запись", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     TeachersListBox.UnselectAll();
+                    
                 }
             }
             catch (Exception ex)

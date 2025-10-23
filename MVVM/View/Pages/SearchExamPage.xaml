@@ -79,8 +79,8 @@
 
                 <DataGridTextColumn Header="Аудитория" 
                            Binding="{Binding IdAudienceNavigation.NumberAudience}"/>
-
-                <DataGridTextColumn Header="Дата/время" 
+ 
+            <DataGridTextColumn Header="Дата/время" 
                            Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>
                 <DataGridTemplateColumn Header="Действия" Width="200">
                     <DataGridTemplateColumn.CellTemplate>

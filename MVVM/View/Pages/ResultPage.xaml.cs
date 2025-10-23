@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.ViewModel;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages
 {
@@ -27,6 +26,12 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
             var selectedDepartment = DepartmentComboBox.SelectedItem as Department;
             var selectedGroups = GroupsListBox.SelectedItems.Cast<Group>().ToList();
             using var context = new ApplicationDbContext();
+            
+            var disciplines = await context.Disciplines
+            .AsNoTracking()
+            .ToDictionaryAsync(d => d.IdDiscipline, d => d);
+
+            context.ChangeTracker.Clear();
 
             switch (viewModel.SelectedResult)
             {
@@ -37,7 +42,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     .Include(e => e.IdTeachers)
                     .Include(e => e.IdAudienceNavigation)
                     .Include(e => e.IdDisciplineNavigation)
-                    .Include(e => e.IdQualificationNavigation)
+                    .Include(e => e.IdQualificationNavigation)     
                     .Include(e => e.IdTypeOfExamNavigation)
                     .Include(e => e.IdTypeOfLessonNavigation)
                     .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "Стандартный");
@@ -54,6 +59,14 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
 
                     var results = await query.ToListAsync();
 
+                    foreach (var exam in results)
+                    {
+                        if (disciplines.ContainsKey(exam.IdDiscipline))
+                        {
+                            exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
+                        }
+                    }
+
                     viewModel.SearchResults = new ObservableCollection<Exam>(results);
 
                     return;
@@ -68,7 +81,9 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                    .Include(e => e.IdQualificationNavigation)
                    .Include(e => e.IdTypeOfExamNavigation)
                    .Include(e => e.IdTypeOfLessonNavigation)
-                   .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "ПМ");
+                   .AsNoTracking()
+                   .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "ПМ")
+                   ;
 
 
                     if (selectedDepartment != null)
@@ -81,6 +96,14 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     }
 
                     results = await query.ToListAsync();
+
+                    foreach (var exam in results)
+                    {
+                        if (disciplines.ContainsKey(exam.IdDiscipline))
+                        {
+                            exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
+                        }
+                    }
 
                     viewModel.SearchResults = new ObservableCollection<Exam>(results);
 
@@ -96,8 +119,9 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                    .Include(e => e.IdQualificationNavigation)
                    .Include(e => e.IdTypeOfExamNavigation)
                    .Include(e => e.IdTypeOfLessonNavigation)
+                   .AsNoTracking()
                    .AsQueryable().Where(e => e.IdTypeOfExamNavigation.TypeOfExam1 == "Квалификационный");
-                    
+
                     if (selectedDepartment != null)
                         query = query.Where(e => e.IdGroupNavigation.IdDepartment == selectedDepartment.IdDepartment);
 
@@ -108,6 +132,14 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     }
 
                     results = await query.ToListAsync();
+
+                    foreach (var exam in results)
+                    {
+                        if (disciplines.ContainsKey(exam.IdDiscipline))
+                        {
+                            exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
+                        }
+                    }
 
                     viewModel.SearchResults = new ObservableCollection<Exam>(results);
 
