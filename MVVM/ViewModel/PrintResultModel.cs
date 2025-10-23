@@ -312,7 +312,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                 var StudyWorkEmployee = context.Managers.Where(m => m.IdManager == 2).Select(m => m.Post).First();
                                 var OwnerStudyDepartment = context.Managers.Where(m => m.IdManager == 3).Select(m => m.Post).First();
 
-
                                 switch (SelectedDepartment.NameOfDepartment)
                                 {
                                     case "Информационное":
@@ -330,14 +329,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                                 .SetWidth(UnitValue.CreatePercentValue(100))
                                                 .SetMarginTop(5);
 
-                                            // Имя слева
+                                            // Должность слева
                                             lineTable.AddCell(new Cell()
                                                 .Add(new Paragraph(item.Position).SetFont(fontNormal))
                                                 .SetTextAlignment(TextAlignment.LEFT)
                                                 .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
                                                 .SetPadding(0));
 
-                                            // Должность справа
+                                            // Имя справа
                                             lineTable.AddCell(new Cell()
                                                 .Add(new Paragraph(item.Name).SetFont(fontNormal))
                                                 .SetTextAlignment(TextAlignment.RIGHT)
@@ -437,7 +436,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Table CreateExamsTableQualification(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
             // Таблица с фиксированными ширинами колонок
-            var table = new Table(new float[] { 2, 2, 3, 2, 2 })
+            var table = new Table(new float[] { 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
                 .SetMarginTop(10)
                 .SetMarginBottom(10);
@@ -496,7 +495,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 // Преподаватели (по центру)
                 var teachers = exam.IdTeachers?.Any() == true ?
-                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                    string.Join("\n", exam.IdTeachers.Select(t => t.FullName)) : "";
                 table.AddCell(new Cell()
                 .Add(new Paragraph(teachers)
                     .SetFont(fontNormal)
@@ -511,7 +510,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Table CreateExamsTableModules(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
             // Таблица с фиксированными ширинами колонок
-            var table = new Table(new float[] { 2, 2, 3, 2, 2 })
+            var table = new Table(new float[] { 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
                 .SetMarginTop(10)
                 .SetMarginBottom(10);
@@ -570,7 +569,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 // Преподаватели (по центру)
                 var teachers = exam.IdTeachers?.Any() == true ?
-                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                    string.Join("\n", exam.IdTeachers.Select(t => t.FullName)) : "";
                 table.AddCell(new Cell()
                 .Add(new Paragraph(teachers)
                     .SetFont(fontNormal)
@@ -587,7 +586,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Table CreateExamsTable(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
             // Таблица с фиксированными ширинами колонок
-            var table = new Table(new float[] { 2, 2, 2, 3, 2, 2 })
+            var table = new Table(new float[] { 2, 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
                 .SetMarginTop(10)
                 .SetMarginBottom(10);
@@ -654,7 +653,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 // Преподаватели (по центру)
                 var teachers = exam.IdTeachers?.Any() == true ?
-                    string.Join(", ", exam.IdTeachers.Select(t => t.FullName)) : "";
+                    string.Join("\n", exam.IdTeachers.Select(t => t.FullName)) : "";
                 table.AddCell(new Cell()
                 .Add(new Paragraph(teachers)
                     .SetFont(fontNormal)

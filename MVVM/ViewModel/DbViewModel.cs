@@ -21,8 +21,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private ObservableCollection<Audience> _audiences;
         private ObservableCollection<Teacher> _teachers;
         private ObservableCollection<Discipline> _disciplines;
-        private ObservableCollection<Qualification> _qualifications;
-        private ObservableCollection<TypeOfExam> _typeOfExams;
+        private ObservableCollection<Manager> _managers;
+        private ObservableCollection<DepartmentOwner> _departmentOwners;
         private object _selectedItem;
         private object _selectedDepartment;
         private string _enterGroup;
@@ -35,8 +35,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private Visibility _audiencesVisibility = Visibility.Collapsed;
         private Visibility _teachersVisibility = Visibility.Collapsed;
         private Visibility _disciplinesVisibility = Visibility.Collapsed;
-        private Visibility _qualificationsVisibility = Visibility.Collapsed;
-        private Visibility _typeOfExamsVisibility = Visibility.Collapsed;
+        private Visibility _managersVisibility = Visibility.Collapsed;
+        private Visibility _departmentOwnersVisibility = Visibility.Collapsed;
+
 
         public ICommand LoadTableCommand { get; }
         public ICommand BackToExamsCommand { get; }
@@ -135,16 +136,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        public ObservableCollection<Qualification> Qualifications
-        {
-            get => _qualifications;
-            set
-            {
-                _qualifications = value;
-                OnPropertyChanged();
-            }
-        }
-
         public ObservableCollection<Discipline> Disciplines
         {
             get => _disciplines;
@@ -155,6 +146,25 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
+        public ObservableCollection<Manager> Managers
+        {
+            get => _managers;
+            set
+            {
+                _managers = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ObservableCollection<DepartmentOwner> DepartmentOwners
+        {
+            get => _departmentOwners;
+            set
+            {
+                _departmentOwners = value;
+                OnPropertyChanged();
+            }
+        }
         public ObservableCollection<Group> Groups
         {
             get => _groups;
@@ -180,15 +190,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             set
             {
                 _teachers = value;
-                OnPropertyChanged();
-            }
-        }
-        public ObservableCollection<TypeOfExam> TypeOfExams
-        {
-            get => _typeOfExams;
-            set
-            {
-                _typeOfExams = value;
                 OnPropertyChanged();
             }
         }
@@ -255,22 +256,22 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        public Visibility QualificationsVisibility
+        public Visibility DepartmentOwnersVisibility
         {
-            get => _qualificationsVisibility;
+            get => _departmentOwnersVisibility;
             set
             {
-                _qualificationsVisibility = value;
+                _departmentOwnersVisibility = value;
                 OnPropertyChanged();
             }
         }
 
-        public Visibility TypeOfExamsVisibility
+        public Visibility ManagersVisibility
         {
-            get => _typeOfExamsVisibility;
+            get => _managersVisibility;
             set
             {
-                _typeOfExamsVisibility = value;
+                _managersVisibility = value;
                 OnPropertyChanged();
             }
         }
@@ -287,10 +288,10 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 AddItem<Teacher>(_context.Teachers, Teachers);
             else if (DisciplinesVisibility == Visibility.Visible)
                 AddItem<Discipline>(_context.Disciplines, Disciplines);
-            else if (QualificationsVisibility == Visibility.Visible)
-                AddItem<Qualification>(_context.Qualifications, Qualifications);
-            else if (TypeOfExamsVisibility == Visibility.Visible)
-                AddItem<TypeOfExam>(_context.TypeOfExams, TypeOfExams);
+            else if (ManagersVisibility == Visibility.Visible)
+                AddItem<Manager>(_context.Managers, Managers);
+            else if (DepartmentOwnersVisibility == Visibility.Visible)
+                AddItem<DepartmentOwner>(_context.DepartmentOwners, DepartmentOwners);
         }
 
         private void AddItem<T>(DbSet<T> dbSet, ObservableCollection<T> collection) where T : class, new()
@@ -337,15 +338,15 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                         Audiences.Remove(audience);
                         if (SelectedItem == audience) SelectedItem = null;
                     }
-                    else if (itemToDelete is Qualification qualification)
+                    else if (itemToDelete is DepartmentOwner departmentOwner)
                     {
-                        Qualifications.Remove(qualification);
-                        if (SelectedItem == qualification) SelectedItem = null;
+                        DepartmentOwners.Remove(departmentOwner);
+                        if (SelectedItem == departmentOwner) SelectedItem = null;
                     }
-                    else if (itemToDelete is TypeOfExam typeOfExam)
+                    else if (itemToDelete is Manager managers)
                     {
-                        TypeOfExams.Remove(typeOfExam);
-                        if (SelectedItem == typeOfExam) SelectedItem = null;
+                        Managers.Remove(managers);
+                        if (SelectedItem == managers) SelectedItem = null;
                     }
                     else if (itemToDelete is Discipline discipline)
                     {
@@ -397,8 +398,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             Audiences = new ObservableCollection<Audience>(_context.Audiences.ToList());
             Teachers = new ObservableCollection<Teacher>(_context.Teachers.ToList());
             Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
-            Qualifications = new ObservableCollection<Qualification>(_context.Qualifications.ToList());
-            TypeOfExams = new ObservableCollection<TypeOfExam>(_context.TypeOfExams.ToList());
+            Managers = new ObservableCollection<Manager>(_context.Managers.ToList());
+            DepartmentOwners = new ObservableCollection<DepartmentOwner>(_context.DepartmentOwners.ToList());
             OnPropertyChanged(nameof(Departments));
             OnPropertyChanged(nameof(Groups));
         }
@@ -413,8 +414,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 AudiencesVisibility = Visibility.Collapsed;
                 TeachersVisibility = Visibility.Collapsed;
                 DisciplinesVisibility = Visibility.Collapsed;
-                QualificationsVisibility = Visibility.Collapsed;
-                TypeOfExamsVisibility = Visibility.Collapsed;
+                DepartmentOwnersVisibility = Visibility.Collapsed;
+                ManagersVisibility = Visibility.Collapsed;
                 switch (gridName)
                 {
                     case "Groups":
@@ -432,11 +433,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     case "Disciplines":
                         DisciplinesVisibility = Visibility.Visible;
                         break;
-                    case "Qualifications":
-                        QualificationsVisibility = Visibility.Visible;
+                    case "Managers":
+                        ManagersVisibility = Visibility.Visible;
                         break;
-                    case "TypeOfExams":
-                        TypeOfExamsVisibility = Visibility.Visible;
+                    case "DepartmentOwners":
+                        DepartmentOwnersVisibility = Visibility.Visible;
                         break;
                 }
 

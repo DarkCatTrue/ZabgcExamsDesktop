@@ -9,7 +9,7 @@ namespace ZabgcExamsDesktop.MVVM.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is IEnumerable<Teacher> teachers && teachers.Any())
-                return string.Join(", ", teachers.Select(t => t.FullName));
+                return string.Join("\n", teachers.Select(t => t.FullName));
 
             return "Не указано";
         }
