@@ -15,6 +15,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class DbViewModel : INotifyPropertyChanged
     {
+
+        GroupAddWindow groupAddWindow;
+
         private readonly ApplicationDbContext _context;
         private ObservableCollection<Department> _departments;
         private ObservableCollection<Group> _groups;
@@ -109,14 +112,13 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 _context.Groups.Add(newGroup);
                 _context.SaveChanges();
 
-                MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!");
+                MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 EnterGroup = string.Empty;
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при добавлении: {ex.Message}");
+                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -305,8 +307,17 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private void AddGroup()
         {
-            GroupAddWindow groupAddWindow = new GroupAddWindow();
-            groupAddWindow.Show();
+            if (groupAddWindow == null || !groupAddWindow.IsLoaded)
+            {
+                groupAddWindow = new GroupAddWindow();
+                groupAddWindow.Closed += (s, args) => groupAddWindow = null;
+                groupAddWindow.Show();
+            }
+            else
+            {
+                groupAddWindow.Activate();
+                groupAddWindow.Focus();
+            }
         }
 
         private void DeleteItem(object parameter)

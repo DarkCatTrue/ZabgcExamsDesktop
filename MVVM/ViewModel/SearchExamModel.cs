@@ -15,6 +15,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class SearchExamModel : INotifyPropertyChanged
     {
+        private ExamWindow examWindow;
+
         private ObservableCollection<Department> departments;
         private ObservableCollection<Group> groups;
         private ObservableCollection<Teacher> teachers;
@@ -224,7 +226,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             if (parameter is not Exam exam) return;
 
-            var result = MessageBox.Show("Удалить запись?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show("Удалить запись?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
             {
                 try
@@ -259,11 +261,19 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             Page EditDB = new DataBasePage();
             SearchExamWindow.pageManager.ChangePage(EditDB);
         }
-
         public void CreateExam(object parameter)
         {
-            var ExamWindow = new ExamWindow();
-            ExamWindow.Show();
+            if (examWindow == null || !examWindow.IsLoaded)
+            {
+                examWindow = new ExamWindow();
+                examWindow.Closed += (s, args) => examWindow = null;
+                examWindow.Show();
+            }
+            else
+            {
+                examWindow.Activate();
+                examWindow.Focus();
+            }
         }
 
 

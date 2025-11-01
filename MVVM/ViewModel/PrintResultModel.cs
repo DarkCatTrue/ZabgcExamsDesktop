@@ -312,6 +312,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                 var StudyWorkEmployee = context.Managers.Where(m => m.IdManager == 2).Select(m => m.Post).First();
                                 var OwnerStudyDepartment = context.Managers.Where(m => m.IdManager == 3).Select(m => m.Post).First();
 
+
                                 switch (SelectedDepartment.NameOfDepartment)
                                 {
                                     case "Информационное":

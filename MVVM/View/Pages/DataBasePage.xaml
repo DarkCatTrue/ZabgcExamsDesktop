@@ -71,23 +71,10 @@
             >
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Отделение" Binding="{Binding NameOfDepartment}" Width="Auto"/>
-                <DataGridTemplateColumn Header="Действия" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="🗑️ Удалить" 
-                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                CommandParameter="{Binding}"
-                                Margin="2" Padding="5,2" Width="Auto"
-                                Background="#FFf44336" Foreground="White"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
         <DataGrid
-            ItemsSource="{Binding Groups}"
+            ItemsSource="{Binding Groups, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
             Visibility="{Binding GroupsVisibility}"
             SelectedItem="{Binding SelectedItem}"
             IsReadOnly="{Binding IsNotEditing}"
@@ -229,19 +216,6 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Отделение" Binding="{Binding IdDepartmentNavigation.NameOfDepartment}" Width="Auto"/>
                 <DataGridTextColumn Header="Заведующий отделением" Binding="{Binding OwnerName}" Width="Auto"/>
-                <DataGridTemplateColumn Header="Действия" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="🗑️ Удалить" 
-                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                CommandParameter="{Binding}"
-                                Margin="2" Padding="5,2" Width="Auto"
-                                Background="#FFf44336" Foreground="White"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
