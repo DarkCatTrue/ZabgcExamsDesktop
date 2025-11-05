@@ -13,8 +13,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Windows
         public GroupAddWindow()
         {
             InitializeComponent();
-            ApplicationDbContext context = new ApplicationDbContext();
-            DataContext = new DbViewModel(context);
+            DataContext = new DbViewModel();
         }
         private void colapseBtn_MouseDown(object sender, MouseButtonEventArgs e)
         {

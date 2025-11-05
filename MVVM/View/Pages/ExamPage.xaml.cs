@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using Microsoft.EntityFrameworkCore;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
+using ZabgcExamsDesktop.MVVM.View.Windows;
 using ZabgcExamsDesktop.MVVM.ViewModel;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages
@@ -77,6 +78,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     }
 
                     context.SaveChanges();
+                    ReloadPage();
 
                     MessageBox.Show("Добавлена новая запись", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     TeachersListBox.UnselectAll();
@@ -87,6 +89,11 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
             {
                 MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
             }
+        }
+        private void ReloadPage()
+        {
+            var newPage = new SearchExamPage();
+            SearchExamWindow.pageManager.ChangePage(newPage);
         }
     }
 }

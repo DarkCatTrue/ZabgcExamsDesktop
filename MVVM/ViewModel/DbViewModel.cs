@@ -4,8 +4,11 @@ using System.DirectoryServices;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Navigation;
 using Microsoft.EntityFrameworkCore;
+using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.View.Pages;
@@ -17,8 +20,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     {
 
         GroupAddWindow groupAddWindow;
+        ApplicationDbContext _context;
 
-        private readonly ApplicationDbContext _context;
         private ObservableCollection<Department> _departments;
         private ObservableCollection<Group> _groups;
         private ObservableCollection<Audience> _audiences;
@@ -27,14 +30,13 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private ObservableCollection<Manager> _managers;
         private ObservableCollection<DepartmentOwner> _departmentOwners;
         private object _selectedItem;
-        private object _selectedDepartment;
         private string _enterGroup;
         private bool _isEditing = false;
 
 
 
-        private Visibility _departmentsVisbility = Visibility.Visible;
-        private Visibility _groupsVisibility = Visibility.Collapsed;
+        private Visibility _departmentsVisbility = Visibility.Collapsed;
+        private Visibility _groupsVisibility = Visibility.Visible;
         private Visibility _audiencesVisibility = Visibility.Collapsed;
         private Visibility _teachersVisibility = Visibility.Collapsed;
         private Visibility _disciplinesVisibility = Visibility.Collapsed;
@@ -72,8 +74,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 OnPropertyChanged();
             }
         }
-        public DbViewModel(ApplicationDbContext context)
-        {
+        public DbViewModel()
+        {   
+            ApplicationDbContext context = new ApplicationDbContext();
             _context = context;
             LoadData();
             BackToExamsCommand = new RelayCommand(BackToExamsPage);
@@ -111,6 +114,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 _context.Groups.Add(newGroup);
                 _context.SaveChanges();
+               
+                ReloadPage();
 
                 MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -120,6 +125,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void ReloadPage()
+        {
+            var newPage = new DataBasePage();
+            SearchExamWindow.pageManager.ChangePage(newPage);
         }
 
         public void BackToExamsPage(object parameter)
@@ -411,8 +422,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
             Managers = new ObservableCollection<Manager>(_context.Managers.ToList());
             DepartmentOwners = new ObservableCollection<DepartmentOwner>(_context.DepartmentOwners.ToList());
-            OnPropertyChanged(nameof(Departments));
-            OnPropertyChanged(nameof(Groups));
         }
 
         private void ShowGrid(object parameter)
