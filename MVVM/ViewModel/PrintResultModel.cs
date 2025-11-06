@@ -17,11 +17,13 @@ using iText.Layout.Properties;
 using TextAlignment = iText.Layout.Properties.TextAlignment;
 using iText.IO.Font;
 using HorizontalAlignment = iText.Layout.Properties.HorizontalAlignment;
+using NLog;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class PrintResultModel : INotifyPropertyChanged
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private ObservableCollection<TypeOfLesson> lessons;
         private ObservableCollection<TypeOfExam> typeExams;
@@ -316,6 +318,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                 switch (SelectedDepartment.NameOfDepartment)
                                 {
                                     case "Информационное":
+                                        Logger.Info("Формирование отчёта для информационного отделения.");
                                         var DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 1).Select(d => d.OwnerName).First();
                                         var agreements = new[]
                                 {
@@ -351,6 +354,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                         break;
 
                                     case "Горное":
+                                        Logger.Info("Формирование отчёта для горного отделения.");
                                         DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 2).Select(d => d.OwnerName).First();
                                         agreements = new[]
                                 {
@@ -386,6 +390,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                                         break;
 
                                     case "Геолого-маркшейдерское":
+                                        Logger.Info("Формирование отчёта для геолого-маркшейдерского отделения.");
                                         DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 3).Select(d => d.OwnerName).First();
                                         agreements = new[]
                                 {
@@ -436,6 +441,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private Table CreateExamsTableQualification(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
+            Logger.Info("Формирование отчёта для квалификационных экзаменов");
             // Таблица с фиксированными ширинами колонок
             var table = new Table(new float[] { 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
@@ -510,6 +516,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private Table CreateExamsTableModules(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
+            Logger.Info("Формирование отчёта для профессиональных модулей (ПМ).");
             // Таблица с фиксированными ширинами колонок
             var table = new Table(new float[] { 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
@@ -586,6 +593,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private Table CreateExamsTable(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
         {
+            Logger.Info("Формирование отчёта для стандартных экзаменов.");
             // Таблица с фиксированными ширинами колонок
             var table = new Table(new float[] { 2, 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
@@ -676,6 +684,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             try
             {
+                Logger.Info("Загрузка таблиц из базы данных при открытии печати отчёта.");
                 using var context = new ApplicationDbContext();
                 var departments = await context.Departments.ToListAsync();
                 var groups = await context.Groups.ToListAsync();
@@ -715,6 +724,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Ошибка загрузки данных из базы данных {ex}");
             }
         }
 

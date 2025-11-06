@@ -8,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Navigation;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
@@ -18,6 +19,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class DbViewModel : INotifyPropertyChanged
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         GroupAddWindow groupAddWindow;
         ApplicationDbContext _context;
@@ -118,12 +120,15 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 ReloadPage();
 
                 MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+               
+                Logger.Info($"Группа, {EnterGroup} была добавлена в базу данных.");
 
                 EnterGroup = string.Empty;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Произошла ошибка добавления новой группы: {EnterGroup}, id отделения : {SelectedDepartmentId}");
             }
         }
 
@@ -379,12 +384,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     _context.SaveChanges();
                     MessageBox.Show("Запись удалена успешно!", "Успех",
                         MessageBoxButton.OK, MessageBoxImage.Information);
+                    Logger.Info($"Запись {itemToDelete} была удалена из базы данных.");
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                     _context.ChangeTracker.Clear();
+                    Logger.Error($"Ошибка при удалении данных из базы данных: {ex}");
                 }
             }
         }
@@ -405,23 +412,33 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 IsEditing = false;
                 MessageBox.Show("Изменения сохранены успешно!", "Успех",
                     MessageBoxButton.OK, MessageBoxImage.Information);
+                Logger.Info("Изменения в базе данных были успешно выполнены.");
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Изменения в базе данных не выполнены, ошибка: {ex}");
             }
         }
 
         private void LoadData()
         {
-            Departments = new ObservableCollection<Department>(_context.Departments.ToList());
-            Groups = new ObservableCollection<Group>(_context.Groups.ToList());
-            Audiences = new ObservableCollection<Audience>(_context.Audiences.ToList());
-            Teachers = new ObservableCollection<Teacher>(_context.Teachers.ToList());
-            Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
-            Managers = new ObservableCollection<Manager>(_context.Managers.ToList());
-            DepartmentOwners = new ObservableCollection<DepartmentOwner>(_context.DepartmentOwners.ToList());
+            try
+            {
+                Departments = new ObservableCollection<Department>(_context.Departments.ToList());
+                Groups = new ObservableCollection<Group>(_context.Groups.ToList());
+                Audiences = new ObservableCollection<Audience>(_context.Audiences.ToList());
+                Teachers = new ObservableCollection<Teacher>(_context.Teachers.ToList());
+                Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
+                Managers = new ObservableCollection<Manager>(_context.Managers.ToList());
+                DepartmentOwners = new ObservableCollection<DepartmentOwner>(_context.DepartmentOwners.ToList());
+                Logger.Info("Данные для редактирования базы данных успешно загружены.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Данные для редактирования базы данных не были загружены, ошибка : {ex}");
+            }
         }
 
         private void ShowGrid(object parameter)
@@ -440,24 +457,31 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 {
                     case "Groups":
                         GroupsVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица групп");
                         break;
                     case "Departments":
                         DepartmentsVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица отделений");
                         break;
                     case "Audiences":
                         AudiencesVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица аудиторий");
                         break;
                     case "Teachers":
                         TeachersVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица преподавателей");
                         break;
                     case "Disciplines":
                         DisciplinesVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица дисциплин");
                         break;
                     case "Managers":
                         ManagersVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица менеджеров");
                         break;
                     case "DepartmentOwners":
                         DepartmentOwnersVisibility = Visibility.Visible;
+                        Logger.Info("Была открыта таблица зав.Отделений");
                         break;
                 }
 

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 
@@ -10,6 +11,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class AddExamModel : INotifyPropertyChanged
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private ObservableCollection<TypeOfLesson> lessons;
         private ObservableCollection<TypeOfExam> typeExams;
         private ObservableCollection<Department> departments;
@@ -106,7 +109,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Ошибка загрузки данных из базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Ошибка загрузки данных из базы данных: {ex}");
+
             }
         }
         private void UpdateGroups()

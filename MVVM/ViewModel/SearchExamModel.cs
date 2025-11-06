@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     public class SearchExamModel : INotifyPropertyChanged
     {
         private ExamWindow examWindow;
+
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private ObservableCollection<Department> departments;
         private ObservableCollection<Group> groups;
@@ -111,6 +114,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             try
             {
+                Logger.Info("Загрузка таблиц из базы данных");
                 using var context = new ApplicationDbContext();
                 var departments = await context.Departments.ToListAsync();
                 var groups = await context.Groups.ToListAsync();
@@ -149,7 +153,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Ошибка при загрузке таблиц из базы данных, ошибка : {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Ошибка при загрузке таблиц из базы данных, ошибка : {ex}");
             }
         }
 
@@ -240,11 +245,13 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                         context.SaveChanges();
                         SearchResults.Remove(exam);
                         MessageBox.Show("Удалено!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                        Logger.Info($"Удалён экзамен из базы данных {existingExam}");
                     }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Ошибка: {ex.Message}");
+                    Logger.Error($"Ошибка при удалении экзамена : {ex}");
                 }
             }
         }

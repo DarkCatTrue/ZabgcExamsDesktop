@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
 using ZabgcExamsDesktop.MVVM.View.Windows;
@@ -16,6 +17,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
     /// </summary>
     public partial class ExamPage : Page
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public ExamPage()
         {
             InitializeComponent();
@@ -81,6 +83,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     ReloadPage();
 
                     MessageBox.Show("Добавлена новая запись", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Logger.Info($"Был добавлен экзамен для группы : {Group.SelectedItem}");
                     TeachersListBox.UnselectAll();
                     
                 }
@@ -88,6 +91,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
+                Logger.Error($"Не удалось добавить экзамен для группы : {Group.SelectedItem}");
             }
         }
         private void ReloadPage()
