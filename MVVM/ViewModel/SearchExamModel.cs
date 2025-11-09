@@ -245,7 +245,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                         context.SaveChanges();
                         SearchResults.Remove(exam);
                         MessageBox.Show("Удалено!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                        Logger.Info($"Удалён экзамен из базы данных {existingExam}");
+                        Logger.Warn($"Удалён экзамен из базы данных для группы: '{exam.IdGroupNavigation.NameOfGroup}'");
                     }
                 }
                 catch (Exception ex)

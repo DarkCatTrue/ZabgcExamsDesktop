@@ -119,16 +119,16 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                
                 ReloadPage();
 
-                MessageBox.Show($"Группа '{EnterGroup}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                
-                Logger.Info($"Группа, {EnterGroup} была добавлена в базу данных.");
+                Logger.Info($"Группа, '{EnterGroup}' с отделением: '{department.NameOfDepartment}' была добавлена в базу данных.");
 
                 EnterGroup = string.Empty;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                Logger.Error($"Произошла ошибка добавления новой группы: {EnterGroup}, id отделения : {SelectedDepartmentId}");
+                Logger.Error($"Произошла ошибка добавления новой группы: '{EnterGroup}', отделение : '{department.NameOfDepartment}', ошибка: {ex}");
             }
         }
 
@@ -350,46 +350,33 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 {
                     _context.Remove(itemToDelete);
 
-                    if (itemToDelete is Department department)
-                    {
-                        Departments.Remove(department);
-                        if (SelectedItem == department) SelectedItem = null;
-                    }
-                    else if (itemToDelete is Group group)
+                    if (itemToDelete is Group group)
                     {
                         Groups.Remove(group);
                         if (SelectedItem == group) SelectedItem = null;
+                        Logger.Warn($"Группа '{group.NameOfGroup}' была удалена из базы данных.");
                     }
+
                     else if (itemToDelete is Audience audience)
                     {
                         Audiences.Remove(audience);
                         if (SelectedItem == audience) SelectedItem = null;
+                        Logger.Warn($"Аудитория'{audience.NumberAudience}' была удалена из базы данных.");
                     }
-                    else if (itemToDelete is DepartmentOwner departmentOwner)
-                    {
-                        DepartmentOwners.Remove(departmentOwner);
-                        if (SelectedItem == departmentOwner) SelectedItem = null;
-                    }
-                    else if (itemToDelete is Manager managers)
-                    {
-                        Managers.Remove(managers);
-                        if (SelectedItem == managers) SelectedItem = null;
-                    }
+
                     else if (itemToDelete is Discipline discipline)
                     {
                         Disciplines.Remove(discipline);
                         if (SelectedItem == discipline) SelectedItem = null;
+                        Logger.Warn($"Дисциплина '{discipline.NameDiscipline}' была удалена из базы данных.");
                     }
 
                     _context.SaveChanges();
-                    MessageBox.Show("Запись удалена успешно!", "Успех",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    Logger.Info($"Запись {itemToDelete} была удалена из базы данных.");
+                    MessageBox.Show("Запись удалена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     _context.ChangeTracker.Clear();
                     Logger.Error($"Ошибка при удалении данных из базы данных: {ex}");
                 }

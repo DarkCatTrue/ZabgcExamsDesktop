@@ -83,15 +83,13 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
                     ReloadPage();
 
                     MessageBox.Show("Добавлена новая запись", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    Logger.Info($"Был добавлен экзамен для группы : {Group.SelectedItem}");
-                    TeachersListBox.UnselectAll();
-                    
+                    Logger.Warn($"Был добавлен экзамен для группы : '{(Group.SelectedItem as Group).NameOfGroup}'");              
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
-                Logger.Error($"Не удалось добавить экзамен для группы : {Group.SelectedItem}");
+                Logger.Error($"Не удалось добавить экзамен для группы : '{(Group.SelectedItem as Group).NameOfGroup}' ошибка: {ex}");
             }
         }
         private void ReloadPage()
