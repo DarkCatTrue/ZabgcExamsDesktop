@@ -1,15 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using NLog;
+﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ZabgcExamsDesktop.MVVM.Model;
-using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
-using ZabgcExamsDesktop.MVVM.Model.DataBase.Models;
+using ZabgcExamsDesktop.API;
+using ZabgcExamsDesktop.API.Models;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
 
@@ -18,21 +15,22 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     public class SearchExamModel : INotifyPropertyChanged
     {
         private ExamWindow examWindow;
+        private readonly ApiService _apiService;
+
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private ObservableCollection<Department> departments;
-        private ObservableCollection<Group> groups;
-        private ObservableCollection<Teacher> teachers;
-        private ObservableCollection<Audience> audiences;
-        private ObservableCollection<Group> _filteredGroups;
+        private ObservableCollection<DepartmentDto> departments;
+        private ObservableCollection<GroupDto> groups;
+        private ObservableCollection<TeacherDto> teachers;
+        private ObservableCollection<AudienceDto> audiences;
+        private ObservableCollection<GroupDto> _filteredGroups;
 
-        private Department _selectedDepartment;
-        private Group _selectedGroup;
-        private Teacher _selectedTeacher;
-        private Audience _selectedAudience;
-        private Exam _selectedExam;
-        private ObservableCollection<Exam> _searchResults;
+        private DepartmentDto _selectedDepartment;
+        private GroupDto _selectedGroup;
+        private TeacherDto _selectedTeacher;
+        private AudienceDto _selectedAudience;
+        private ObservableCollection<ExamDisplayDto> _searchResults;
         public ICommand CreateExamCommand { get; set; }
         public ICommand EditDataBaseCommand { get; set; }
         public ICommand SearchCommand { get; set; }
@@ -41,59 +39,35 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ICommand DeleteRowCommand { get; set; }
         public ICommand CreateResultCommand { get; set; }
 
-        public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
-        public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
-        public ObservableCollection<Group> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
-        public ObservableCollection<Teacher> Teacher { get => teachers; set { teachers = value; OnPropertyChanged(); } }
-        public ObservableCollection<Audience> Audience { get => audiences; set { audiences = value; OnPropertyChanged(); } }
-
-        public ObservableCollection<Exam> SearchResults
+        public ObservableCollection<DepartmentDto> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
+        public ObservableCollection<GroupDto> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
+        public ObservableCollection<GroupDto> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
+        public ObservableCollection<TeacherDto> Teacher { get => teachers; set { teachers = value; OnPropertyChanged(); } }
+        public ObservableCollection<AudienceDto> Audience { get => audiences; set { audiences = value; OnPropertyChanged(); } }
+        public ObservableCollection<ExamDisplayDto> SearchResults
         {
-            get => _searchResults; set
-            {
-                _searchResults = value; foreach (var exam in _searchResults)
-                {
-                    exam.PropertyChanged += Exam_PropertyChanged;
-                }
-                OnPropertyChanged(nameof(SearchResults));
-            }
-        }
-
-        private HashSet<Exam> _modifiedExams = new HashSet<Exam>();
-
-        private void Exam_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (sender is Exam exam)
-            {
-                _modifiedExams.Add(exam);
-            }
-        }
-
-        public Exam SelectedExam
-        {
-            get => _selectedExam;
+            get => _searchResults;
             set
             {
-                _selectedExam = value;
+                _searchResults = value;
                 OnPropertyChanged();
             }
         }
-
-        public Department SelectedDepartment
+        public DepartmentDto SelectedDepartment
         {
             get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
         }
 
-        public Group SelectedGroup
+        public GroupDto SelectedGroup
         {
             get => _selectedGroup; set { _selectedGroup = value; OnPropertyChanged(); }
         }
-        public Teacher SelectedTeacher
+        public TeacherDto SelectedTeacher
         {
             get => _selectedTeacher; set { _selectedTeacher = value; OnPropertyChanged(); }
         }
 
-        public Audience SelectedAudience
+        public AudienceDto SelectedAudience
         {
             get => _selectedAudience; set { _selectedAudience = value; OnPropertyChanged(); }
         }
@@ -101,74 +75,93 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         public SearchExamModel()
         {
-            LoadDB();
-            DeleteRowCommand = new RelayCommand(DeleteExam);
+            _apiService = new ApiService();
+            LoadInitialDataAsync();
+            DeleteRowCommand = new RelayCommand(async (param) => await DeleteExamAsync(param as ExamDisplayDto));
             CreateExamCommand = new RelayCommand(CreateExam);
             EditDataBaseCommand = new RelayCommand(EditDataBase);
-            SearchCommand = new RelayCommand(Search);
+            SearchCommand = new RelayCommand(async async => await SearchAsync());
             ClearSearchCommand = new RelayCommand(ClearSearch);
             CreateResultCommand = new RelayCommand(GoToResultPage);
         }
 
-        public async void LoadDB()
+        private async Task LoadInitialDataAsync()
+        {
+            await LoadReferenceDataAsync();
+            await LoadAllDataAsync();
+        }
+        private async Task LoadReferenceDataAsync()
         {
             try
             {
-                Logger.Info("Загрузка таблиц из базы данных");
-                using var context = new ApplicationDbContext();
-                var departments = await context.Departments.ToListAsync();
-                var groups = await context.Groups.ToListAsync();
-                var teachers = await context.Teachers.ToListAsync();
-                var audiences = await context.Audiences.ToListAsync();
+                var departmentsTask = _apiService.GetDepartmentsAsync();
+                var groupsTask = _apiService.GetGroupsAsync();
+                var teachersTask = _apiService.GetTeachersAsync();
+                var audiencesTask = _apiService.GetAudiencesAsync();
 
-                context.ChangeTracker.Clear();
+                await Task.WhenAll(departmentsTask, groupsTask, teachersTask, audiencesTask);
 
-                var disciplines = context.Disciplines.ToDictionary(d => d.IdDiscipline, d => d);
+                Department = new ObservableCollection<DepartmentDto>(departmentsTask.Result);
+                Group = new ObservableCollection<GroupDto>(groupsTask.Result);
+                FilteredGroups = new ObservableCollection<GroupDto>(Group);
+                Teacher = new ObservableCollection<TeacherDto>(teachersTask.Result);
+                Audience = new ObservableCollection<AudienceDto>(audiencesTask.Result);
 
-                Department = new ObservableCollection<Department>(departments);
-                Group = new ObservableCollection<Group>(groups);
-                Teacher = new ObservableCollection<Teacher>(teachers);
-                Audience = new ObservableCollection<Audience>(audiences);
-                FilteredGroups = new ObservableCollection<Group>(groups);
-                var exams = context.Exams
-                .Include(e => e.IdGroupNavigation)
-                .ThenInclude(e => e.IdDepartmentNavigation)
-                .Include(e => e.IdTypeOfLessonNavigation)
-                .Include(e => e.IdTypeOfExamNavigation)
-                .Include(e => e.IdQualificationNavigation)
-                .Include(e => e.IdAudienceNavigation)
-                .Include(e => e.IdTeachers)
-                .AsNoTracking()
-                .ToList();
-               
-                foreach (var exam in exams)
-                {
-                    if (disciplines.ContainsKey(exam.IdDiscipline))
-                    {
-                        exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
-                    }
-                }
-
-                SearchResults = new ObservableCollection<Exam>(exams);
+                OnPropertyChanged(nameof(Department));
+                OnPropertyChanged(nameof(Group));
+                OnPropertyChanged(nameof(Teacher));
+                OnPropertyChanged(nameof(Audience));
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при загрузке таблиц из базы данных, ошибка : {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
-                Logger.Error($"Ошибка при загрузке таблиц из базы данных, ошибка : {ex}");
+                MessageBox.Show($"Ошибка загрузки ComboBox: {ex.Message}");
             }
         }
-
+        public async Task LoadAllDataAsync()
+        {
+            try
+            {
+                var exams = await _apiService.GetExamsDisplayAsync();
+                SearchResults = new ObservableCollection<ExamDisplayDto>(exams);
+                Logger.Info("Данные успешно загружены через API");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке данных через API: {ex.Message}",
+                    "Ошибка загрузки", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Ошибка при загрузке данных через API: {ex}");
+            }
+        }
         private void GoToResultPage(object parameter)
         {
             Page resultPage = new ResultPage();
             SearchExamWindow.pageManager.ChangePage(resultPage);
         }
 
+        private async Task SearchAsync()
+        {
+            try
+            {
+                var exams = await _apiService.SearchExamsAsync(
+                    departmentId: SelectedDepartment?.IdDepartment,
+                    groupId: SelectedGroup?.IdGroup,
+                    teacherId: SelectedTeacher?.IdTeacher,
+                    audienceId: SelectedAudience?.IdAudience
+                );
+
+                SearchResults = new ObservableCollection<ExamDisplayDto>(exams);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при поиске: {ex.Message}");
+            }
+        }
+
         private void UpdateGroups()
         {
             if (SelectedDepartment == null)
             {
-                FilteredGroups = new ObservableCollection<Group>(Group);
+                FilteredGroups = new ObservableCollection<GroupDto>(Group);
             }
             else
             {
@@ -176,82 +169,27 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     .Where(g => g.IdDepartment == SelectedDepartment.IdDepartment)
                     .ToList();
 
-                FilteredGroups = new ObservableCollection<Group>(filtered);
+                FilteredGroups = new ObservableCollection<GroupDto>(filtered);
             }
 
             SelectedGroup = null;
         }
 
-        private async void Search(object parameter)
+
+        private async Task DeleteExamAsync(ExamDisplayDto exam)
         {
-            using var context = new ApplicationDbContext();
-
-            context.ChangeTracker.Clear();
-
-            var disciplines = await context.Disciplines
-                .AsNoTracking()
-                .ToDictionaryAsync(d => d.IdDiscipline, d => d);
-
-            var query = context.Exams
-                .Include(e => e.IdGroupNavigation)
-                .ThenInclude(e => e.IdDepartmentNavigation)
-                .Include(e => e.IdTypeOfLessonNavigation)
-                .Include(e => e.IdTypeOfExamNavigation)
-                .Include(e => e.IdQualificationNavigation)
-                .Include(e => e.IdAudienceNavigation)
-                .Include(e => e.IdTeachers)
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (SelectedDepartment != null)
-                query = query.Where(e => e.IdGroupNavigation.IdDepartment == SelectedDepartment.IdDepartment);
-
-            if (SelectedGroup != null)
-                query = query.Where(e => e.IdGroup == SelectedGroup.IdGroup);
-
-            if (SelectedTeacher != null)
-                query = query.Where(e => e.IdTeachers.Any(t => t.IdTeacher == SelectedTeacher.IdTeacher));
-
-            if (SelectedAudience != null)
-                query = query.Where(e => e.IdAudience == SelectedAudience.IdAudience);
-
-            var results = await query.ToListAsync();
-
-            foreach (var exam in results)
+            if (exam != null)
             {
-                if (disciplines.ContainsKey(exam.IdDiscipline))
-                {
-                    exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
-                }
-            }
+                var result = MessageBox.Show($"Удалить экзамен для группы {exam.GroupName}?",
+                    "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-            SearchResults = new ObservableCollection<Exam>(results);
-            OnPropertyChanged(nameof(SearchResults));
-        }
-        private void DeleteExam(object parameter)
-        {
-            if (parameter is not Exam exam) return;
-
-            var result = MessageBox.Show("Удалить запись?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.Yes)
-            {
-                try
+                if (result == MessageBoxResult.Yes)
                 {
-                    using var context = new ApplicationDbContext();
-                    var existingExam = context.Exams.Find(exam.IdExam);
-                    if (existingExam != null)
+                    if (await _apiService.DeleteExamAsync(exam.IdExam))
                     {
-                        context.Exams.Remove(existingExam);
-                        context.SaveChanges();
-                        SearchResults.Remove(exam);
-                        MessageBox.Show("Удалено!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                        Logger.Warn($"Удалён экзамен из базы данных для группы: '{exam.IdGroupNavigation.NameOfGroup}'");
+                        await LoadAllDataAsync();
+                        MessageBox.Show("Экзамен удален", "Удаление экзамена", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка: {ex.Message}");
-                    Logger.Error($"Ошибка при удалении экзамена : {ex}");
                 }
             }
         }

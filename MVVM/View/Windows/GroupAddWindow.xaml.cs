@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using ZabgcExamsDesktop.MVVM.Model.DataBase.Data;
 using ZabgcExamsDesktop.MVVM.ViewModel;
 
 namespace ZabgcExamsDesktop.MVVM.View.Windows

@@ -4,7 +4,6 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages" 
-      xmlns:converters="clr-namespace:ZabgcExamsDesktop.MVVM.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="1080" d:DesignWidth="1920"
       Title="SearchExamPage"
@@ -14,7 +13,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary>
-                    <converters:TeachersConverter x:Key="TeachersConverter"/>
+                    <!--<converters:TeachersConverter x:Key="TeachersConverter"/>-->
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
@@ -49,48 +48,37 @@
         <Button Name="ClearSearchBtn" Grid.Column="4" Grid.Row="3" Height="30" Content="Очистить поиск" Command="{Binding ClearSearchCommand}"/>
         <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="5" Grid.Row="4" 
           ItemsSource="{Binding SearchResults}"
-          SelectedItem="{Binding SelectedExam, Mode=TwoWay}"
           AutoGenerateColumns="False"
           CanUserAddRows="False"
           IsReadOnly="True"
 >
             <DataGrid.Columns>
-
-                <DataGridTextColumn Header="Отделение"
-                            Binding="{Binding IdGroupNavigation.IdDepartmentNavigation.NameOfDepartment}"/>
-
-                <DataGridTextColumn Header="Группа"
-                            Binding="{Binding IdGroupNavigation.NameOfGroup, UpdateSourceTrigger=PropertyChanged}"/>
-
-                <DataGridTextColumn Header="Консультация/Экзамен" 
-                           Binding="{Binding IdTypeOfLessonNavigation.TypeOfLesson1}"/>
-
-                <DataGridTextColumn Header="Тип экзамена" 
-                           Binding="{Binding IdTypeOfExamNavigation.TypeOfExam1}"/>
-
-                <DataGridTextColumn Header="Квалификация" 
-                           Binding="{Binding IdQualificationNavigation.NameQualification}"/>
-
-                <DataGridTextColumn Header="Дисциплина" 
-                           Binding="{Binding IdDisciplineNavigation.NameDiscipline}"/>
-
-                <DataGridTextColumn Header="Преподаватели" 
-                           Binding="{Binding IdTeachers, Converter={StaticResource TeachersConverter}}"/>
-
-                <DataGridTextColumn Header="Аудитория" 
-                           Binding="{Binding IdAudienceNavigation.NumberAudience}"/>
- 
-            <DataGridTextColumn Header="Дата/время" 
-                           Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>
+                
+                <DataGridTextColumn Header="Отделение" Binding="{Binding DepartmentName}"/>
+                
+                <DataGridTextColumn Header="Группа" Binding="{Binding GroupName}"/>
+                
+                <DataGridTextColumn Header="Консультация/Экзамен" Binding="{Binding TypeOfLessonName}"/>
+                
+                <DataGridTextColumn Header="Тип экзамена" Binding="{Binding TypeOfExamName}"/>
+                                
+                <DataGridTextColumn Header="Дисциплина" Binding="{Binding DisciplineName}"/>
+                
+                <DataGridTextColumn Header="Преподаватели" Binding="{Binding TeachersDisplay}"/>
+                
+                <DataGridTextColumn Header="Аудитория" Binding="{Binding AudienceNumber}"/>
+                
+                <DataGridTextColumn Header="Дата/время" 
+                       Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>
                 <DataGridTemplateColumn Header="Действия" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="Удалить" 
-                        Command="{Binding DataContext.DeleteRowCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"
-                        Margin="2" Padding="5,2" Width="Auto"
-                        Background="#FFf44336" Foreground="White"/>
+                                Command="{Binding DataContext.DeleteRowCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                CommandParameter="{Binding}"
+                                Margin="2" Padding="5,2" Width="Auto"
+                                Background="#FFf44336" Foreground="White"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

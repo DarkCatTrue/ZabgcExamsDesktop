@@ -34,17 +34,15 @@
         <TextBlock Grid.Row="4" Text="Группа" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
         <TextBlock Grid.Row="5" Text="Аудитория" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
         <TextBlock Grid.Row="6" Text="Дисциплина" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
-        <TextBlock Grid.Row="7" Text="Квалификация" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
-        <TextBlock Grid.Row="8" Text="Члены ЭК" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
-        <TextBlock Grid.Row="9" Text="Дата/Время" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
-        <ComboBox Grid.Column="1" Grid.Row="1" Name="TypeLesson" ItemsSource="{Binding Lesson}" DisplayMemberPath="TypeOfLesson1" SelectedItem="{Binding SelectedLesson}" Height="30"/>
-        <ComboBox Grid.Column="1" Grid.Row="2" Name="TypeExam" ItemsSource="{Binding TypeExam}" DisplayMemberPath="TypeOfExam1" SelectedItem="{Binding SelectedTypeOfExam}" Height="30"/>
+        <TextBlock Grid.Row="7" Text="Члены ЭК" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
+        <TextBlock Grid.Row="8" Text="Дата/Время" VerticalAlignment="Center" HorizontalAlignment="Center"  Style="{StaticResource GlobalTextBlockStyle}"/>
+        <ComboBox Grid.Column="1" Grid.Row="1" Name="TypeLesson" ItemsSource="{Binding Lesson}" DisplayMemberPath="NameOfTypeOfLesson" SelectedItem="{Binding SelectedLesson}" Height="30"/>
+        <ComboBox Grid.Column="1" Grid.Row="2" Name="TypeExam" ItemsSource="{Binding TypeExam}" DisplayMemberPath="NameOfTypeOfExam" SelectedItem="{Binding SelectedTypeOfExam}" Height="30"/>
         <ComboBox Grid.Column="1" Grid.Row="3" Name="Department" ItemsSource="{Binding Department}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment}" Height="30"/>
         <ComboBox Grid.Column="1" Grid.Row="4" Name="Group" Height="30" ItemsSource="{Binding FilteredGroups}" DisplayMemberPath="NameOfGroup" SelectedItem="{Binding SelectedGroup}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="5" Name="Audience" Height="30" ItemsSource="{Binding Audience}" DisplayMemberPath="NumberAudience" SelectedItem="{Binding SelectedAudience}" IsTextSearchEnabled="False" IsEditable="True"/>
         <ComboBox Grid.Column="1" Grid.Row="6" Name="Discipline" Height="30" ItemsSource="{Binding Discipline}" DisplayMemberPath="NameDiscipline" SelectedValuePath="IdDiscipline" SelectedItem="{Binding SelectedDiscipline}" IsTextSearchEnabled="False" IsEditable="True"/>
-        <ComboBox Grid.Column="1" Grid.Row="7" Name="Qualification" Height="30" ItemsSource="{Binding Qualification}" DisplayMemberPath="NameQualification" SelectedItem="{Binding SelectedQualification}" IsTextSearchEnabled="False" IsEditable="True"/>
-       <ListBox Grid.Column="1" Grid.Row="8" 
+       <ListBox Grid.Column="1" Grid.Row="7" 
      x:Name="TeachersListBox"
      ItemsSource="{Binding Teacher}"
      SelectionMode="Multiple">
@@ -55,8 +53,8 @@
         </DataTemplate>
     </ListBox.ItemTemplate>
 </ListBox>
-        <DatePicker Grid.Column="1" Grid.Row="9" Name="DateEvent" Language="RU" Foreground="White" Width="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <md:TimePicker Grid.Column="1" Grid.Row="9" Name="TimeEvent" Foreground="White" Is24Hours="True" Width="60" SelectedTimeFormat="Long" VerticalAlignment="Center" HorizontalAlignment="Right" />
+        <DatePicker Grid.Column="1" Grid.Row="8" Name="DateEvent" Language="RU" Foreground="White" Width="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <md:TimePicker Grid.Column="1" Grid.Row="8" Name="TimeEvent" Foreground="White" Is24Hours="True" Width="60" SelectedTimeFormat="Long" VerticalAlignment="Center" HorizontalAlignment="Right" />
         <Button Content="Добавить запись" Grid.Row="10" Grid.ColumnSpan="2" Click="SaveButton_Click" Height="Auto" VerticalAlignment="Stretch" Cursor="Hand"/>
     </Grid>
 </Page>

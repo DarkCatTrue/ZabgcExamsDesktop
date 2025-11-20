@@ -3,8 +3,8 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages" xmlns:converters="clr-namespace:ZabgcExamsDesktop.MVVM.Converters"
-      mc:Ignorable="d" 
+      xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Pages"
+    mc:Ignorable="d" 
       d:DesignHeight="1080" d:DesignWidth="1920"
       Title="ResultPage"
       Background="#323a47">
@@ -12,7 +12,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary>
-                    <converters:TeachersConverter x:Key="TeachersConverter"/>
+                    <!--<converters:TeachersConverter x:Key="TeachersConverter"/>-->
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
@@ -92,7 +92,7 @@
                Binding="{Binding IdDisciplineNavigation.NameDiscipline}"/>
 
                 <DataGridTextColumn Header="Преподаватели" 
-               Binding="{Binding IdTeachers, Converter={StaticResource TeachersConverter}}"/>
+               Binding="{Binding IdTeachers}"/>
 
                 <DataGridTextColumn Header="Аудитория" 
                Binding="{Binding IdAudienceNavigation.NumberAudience}"/>
