@@ -1,14 +1,17 @@
-﻿using System.Collections.ObjectModel;
+﻿using Microsoft.EntityFrameworkCore;
+using NLog;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.DirectoryServices;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Navigation;
-using Microsoft.EntityFrameworkCore;
-using NLog;
+using ZabgcExamsDesktop.API;
+using ZabgcExamsDesktop.API.Models;
 using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
@@ -20,15 +23,16 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         GroupAddWindow groupAddWindow;
-        //ApplicationDbContext _context;
+        private readonly ApiService _apiService;
 
-        //private ObservableCollection<Department> _departments;
-        //private ObservableCollection<Group> _groups;
-        //private ObservableCollection<Audience> _audiences;
-        //private ObservableCollection<Teacher> _teachers;
-        //private ObservableCollection<Discipline> _disciplines;
-        //private ObservableCollection<Manager> _managers;
-        //private ObservableCollection<DepartmentOwner> _departmentOwners;
+        private ObservableCollection<DepartmentDto> _departments;
+        private ObservableCollection<GroupDto> _groups;
+        private ObservableCollection<AudienceDto> _audiences;
+        private ObservableCollection<TeacherDto> _teachers;
+        private ObservableCollection<DisciplineDto> _disciplines;
+        private ObservableCollection<ManagerDto> _managers;
+        private ObservableCollection<DepartmentOwnerDto> _departmentOwners;
+        
         private object _selectedItem;
         private string _enterGroup;
         private bool _isEditing = false;
@@ -75,12 +79,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
         public DbViewModel()
-        {   
-            //ApplicationDbContext context = new ApplicationDbContext();
-            //_context = context;
-            //LoadData();
-            //BackToExamsCommand = new RelayCommand(BackToExamsPage);
-            //LoadTableCommand = new RelayCommand(ShowGrid);
+        {
+            _apiService = new ApiService();
+            LoadData();
+            BackToExamsCommand = new RelayCommand(BackToExamsPage);
+            LoadTableCommand = new RelayCommand(ShowGrid);
             //DeleteCommand = new RelayCommand(DeleteItem);
             //EditCommand = new RelayCommand(EditItem);
             //SaveCommand = new RelayCommand(SaveChanges);
@@ -142,73 +145,73 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SearchExamWindow.pageManager.ChangePage(SearchExam);
         }
 
-        //public ObservableCollection<Department> Departments
-        //{
-        //    get => _departments;
-        //    set
-        //    {
-        //        _departments = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
+        public ObservableCollection<DepartmentDto> Departments
+        {
+            get => _departments;
+            set
+            {
+                _departments = value;
+                OnPropertyChanged();
+            }
+        }
 
-        //public ObservableCollection<Discipline> Disciplines
-        //{
-        //    get => _disciplines;
-        //    set
-        //    {
-        //        _disciplines = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
+        public ObservableCollection<DisciplineDto> Disciplines
+        {
+            get => _disciplines;
+            set
+            {
+                _disciplines = value;
+                OnPropertyChanged();
+            }
+        }
 
-        //public ObservableCollection<Manager> Managers
-        //{
-        //    get => _managers;
-        //    set
-        //    {
-        //        _managers = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
+        public ObservableCollection<ManagerDto> Managers
+        {
+            get => _managers;
+            set
+            {
+                _managers = value;
+                OnPropertyChanged();
+            }
+        }
 
-        //public ObservableCollection<DepartmentOwner> DepartmentOwners
-        //{
-        //    get => _departmentOwners;
-        //    set
-        //    {
-        //        _departmentOwners = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
-        //public ObservableCollection<Group> Groups
-        //{
-        //    get => _groups;
-        //    set
-        //    {
-        //        _groups = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
+        public ObservableCollection<DepartmentOwnerDto> DepartmentOwners
+        {
+            get => _departmentOwners;
+            set
+            {
+                _departmentOwners = value;
+                OnPropertyChanged();
+            }
+        }
+        public ObservableCollection<GroupDto> Groups
+        {
+            get => _groups;
+            set
+            {
+                _groups = value;
+                OnPropertyChanged();
+            }
+        }
 
-        //public ObservableCollection<Audience> Audiences
-        //{
-        //    get => _audiences;
-        //    set
-        //    {
-        //        _audiences = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
-        //public ObservableCollection<Teacher> Teachers
-        //{
-        //    get => _teachers;
-        //    set
-        //    {
-        //        _teachers = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
+        public ObservableCollection<AudienceDto> Audiences
+        {
+            get => _audiences;
+            set
+            {
+                _audiences = value;
+                OnPropertyChanged();
+            }
+        }
+        public ObservableCollection<TeacherDto> Teachers
+        {
+            get => _teachers;
+            set
+            {
+                _teachers = value;
+                OnPropertyChanged();
+            }
+        }
         public bool IsEditing
         {
             get => _isEditing;
@@ -407,24 +410,36 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         //    }
         //}
 
-        //private void LoadData()
-        //{
-        //    try
-        //    {
-        //        Departments = new ObservableCollection<Department>(_context.Departments.ToList());
-        //        Groups = new ObservableCollection<Group>(_context.Groups.ToList());
-        //        Audiences = new ObservableCollection<Audience>(_context.Audiences.ToList());
-        //        Teachers = new ObservableCollection<Teacher>(_context.Teachers.ToList());
-        //        Disciplines = new ObservableCollection<Discipline>(_context.Disciplines.ToList());
-        //        Managers = new ObservableCollection<Manager>(_context.Managers.ToList());
-        //        DepartmentOwners = new ObservableCollection<DepartmentOwner>(_context.DepartmentOwners.ToList());
-        //        Logger.Info("Данные для редактирования базы данных успешно загружены.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.Error($"Данные для редактирования базы данных не были загружены, ошибка : {ex}");
-        //    }
-        //}
+        private async Task LoadData()
+        {
+            try
+            {
+
+                var departments = _apiService.GetDepartmentsAsync();
+                var groups = _apiService.GetGroupsAsync();
+                var teachers = _apiService.GetTeachersAsync();
+                var audiences = _apiService.GetAudiencesAsync();
+                var typeOfExams = _apiService.GetTypeOfExamsAsync();
+                var disciplines = _apiService.GetDisciplinesAsync();
+                var managers = _apiService.GetManagersAsync();
+                var departmentOwners = _apiService.GetDepartmentOwnersAsync();
+                
+                await Task.WhenAll(departments, groups, teachers, audiences, managers, typeOfExams, disciplines, departmentOwners);
+
+                Departments = new ObservableCollection<DepartmentDto>(departments.Result);
+                Groups = new ObservableCollection<GroupDto>(groups.Result);
+                Audiences = new ObservableCollection<AudienceDto>(audiences.Result);
+                Teachers = new ObservableCollection<TeacherDto>(teachers.Result);
+                Disciplines = new ObservableCollection<DisciplineDto>(disciplines.Result);
+                Managers = new ObservableCollection<ManagerDto>(managers.Result);
+                DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners.Result);
+                Logger.Info("Данные для редактирования базы данных успешно загружены.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Данные для редактирования базы данных не были загружены, ошибка : {ex}");
+            }
+        }
 
         private void ShowGrid(object parameter)
         {

@@ -24,6 +24,36 @@ namespace ZabgcExamsDesktop.API
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        public async Task<bool> CreateExamAsync(CreateExamDto exam)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(exam);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                Console.WriteLine($"Sending POST to exams: {json}");
+
+                var response = await _httpClient.PostAsync("exams", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Exam created successfully");
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Create exam error: {ex.Message}");
+                return false;
+            }
+        }
+
         public async Task<List<ExamDisplayDto>> SearchExamsAsync(
         int? departmentId = null,
         int? groupId = null,
@@ -182,6 +212,16 @@ namespace ZabgcExamsDesktop.API
         public async Task<List<DisciplineDto>> GetDisciplinesAsync()
         {
             return await GetAsync<List<DisciplineDto>>("discipline");
+        }
+        // === Методы CRUD для Менеджеров
+        public async Task<List<ManagerDto>> GetManagersAsync()
+        {
+            return await GetAsync<List<ManagerDto>>("manager");
+        }
+        // === Методы CRUD для Зав.Отделений
+        public async Task<List<DepartmentOwnerDto>> GetDepartmentOwnersAsync()
+        {
+            return await GetAsync<List<DepartmentOwnerDto>>("departmentOwner");
         }
         // === Общие методы для HTTP запросов ===
         private async Task<T> GetAsync<T>(string endpoint)

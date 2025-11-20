@@ -86,7 +86,7 @@
             Grid.RowSpan="4">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Группа" Binding="{Binding NameOfGroup}" Width="Auto"/>
-                <DataGridTextColumn Header="Отделение" Binding="{Binding IdDepartmentNavigation.NameOfDepartment}" Width="Auto"/>
+                <DataGridTextColumn Header="Отделение" Binding="{Binding IdDepartment.NameOfDepartment}" Width="Auto"/>
                 <DataGridTemplateColumn Header="Действия" Width="Auto">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
