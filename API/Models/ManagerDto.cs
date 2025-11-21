@@ -1,6 +1,6 @@
 ﻿namespace ZabgcExamsDesktop.API.Models
 {
-    public class ManagerDto
+    public class ManagerDto : BaseDto
     {
         public int IdManager { get; set; }
         public string Post { get; set; } = null!;

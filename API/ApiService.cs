@@ -213,15 +213,60 @@ namespace ZabgcExamsDesktop.API
         {
             return await GetAsync<List<DisciplineDto>>("discipline");
         }
+        public async Task<bool> UpdateDisciplineAsync(DisciplineDto discipline)
+        {
+            return await PutAsync($"discipline/{discipline.IdDiscipline}", discipline);
+        }
+        public async Task<bool> DeleteDisciplineAsync(int id)
+        {
+            return await DeleteAsync($"discipline/{id}");
+        }
+        public async Task<bool> CreateDisciplineAsync(DisciplineDto discipline)
+        {
+            return await PostAsync("discipline", discipline);
+        }
         // === Методы CRUD для Менеджеров
         public async Task<List<ManagerDto>> GetManagersAsync()
         {
             return await GetAsync<List<ManagerDto>>("manager");
         }
+        public async Task<ManagerDto> GetManagerAsync(int id)
+        {
+            return await GetAsync<ManagerDto>($"manager/{id}");
+        }
+
+        public async Task<bool> CreateManagerAsync(ManagerDto manager)
+        {
+            return await PostAsync("manager", manager);
+        }
+
+        public async Task<bool> UpdateManagerAsync(ManagerDto manager)
+        {
+            return await PutAsync($"manager/{manager.IdManager}", manager);
+        }
+
+        public async Task<bool> DeleteManagerAsync(int id)
+        {
+            return await DeleteAsync($"manager/{id}");
+        }
         // === Методы CRUD для Зав.Отделений
         public async Task<List<DepartmentOwnerDto>> GetDepartmentOwnersAsync()
         {
             return await GetAsync<List<DepartmentOwnerDto>>("departmentOwner");
+        }
+        public async Task<bool> CreateDepartmentOwnerAsync(DepartmentOwnerDto departmentOwnerDto)
+        {
+            return await PostAsync("departmentOwner", departmentOwnerDto);
+        }
+
+        public async Task<bool> UpdateDepartmentOwnerAsync(DepartmentOwnerDto departmentOwnerDto)
+        {
+            return await PutAsync($"departmentOwner/{departmentOwnerDto.IdDepartment}", departmentOwnerDto);
+        }
+
+        public async Task<bool> DeleteDepartmentOwnerAsync(int id)
+        {
+            return await DeleteAsync($"departmentOwner/{id}");
         }
         // === Общие методы для HTTP запросов ===
         private async Task<T> GetAsync<T>(string endpoint)

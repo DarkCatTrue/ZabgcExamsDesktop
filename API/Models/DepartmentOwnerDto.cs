@@ -1,6 +1,6 @@
 ﻿namespace ZabgcExamsDesktop.API.Models
 {
-    public class DepartmentOwnerDto
+    public class DepartmentOwnerDto : BaseDto
     {
         public int IdOwner { get; set; }
 

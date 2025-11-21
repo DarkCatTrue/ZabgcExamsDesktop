@@ -84,54 +84,64 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             LoadData();
             BackToExamsCommand = new RelayCommand(BackToExamsPage);
             LoadTableCommand = new RelayCommand(ShowGrid);
-            //DeleteCommand = new RelayCommand(DeleteItem);
-            //EditCommand = new RelayCommand(EditItem);
-            //SaveCommand = new RelayCommand(SaveChanges);
-            //AddCommand = new RelayCommand(AddNewItem);
-            //AddNewGroupCommand = new RelayCommand(AddNewGroup);
+            DeleteCommand = new RelayCommand(DeleteItem);
+            EditCommand = new RelayCommand(EditItem);
+            SaveCommand = new RelayCommand(SaveChanges);
+            AddCommand = new RelayCommand(AddNewItem);
+            AddNewGroupCommand = new RelayCommand(AddNewGroup);
         }
 
-        //private void AddNewGroup(object parameter)
-        //{
-        //    var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
+        private async void AddNewGroup(object parameter)
+        {
+            if (string.IsNullOrWhiteSpace(EnterGroup))
+            {
+                MessageBox.Show("Введите название группы!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-        //    if (string.IsNullOrWhiteSpace(EnterGroup))
-        //    {
-        //        MessageBox.Show("Введите название группы!");
-        //        return;
-        //    }
+            if (SelectedDepartmentId == null)
+            {
+                MessageBox.Show("Выберите отделение!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-        //    if (SelectedDepartmentId == null)
-        //    {
-        //        MessageBox.Show("Выберите отделение!");
-        //        return;
-        //    }
+            try
+            {
+                var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
+                if (department == null)
+                {
+                    MessageBox.Show("Выбранное отделение не найдено!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-        //    try
-        //    {
-        //        var newGroup = new Group
-        //        {
-        //            NameOfGroup = EnterGroup.Trim(),
-        //            IdDepartment = department.IdDepartment,
-        //        };
+                var newGroup = new GroupDto
+                {
+                    NameOfGroup = EnterGroup.Trim(),
+                    IdDepartment = SelectedDepartmentId.Value
+                };
 
-        //        _context.Groups.Add(newGroup);
-        //        _context.SaveChanges();
-               
-        //        ReloadPage();
+                if (await _apiService.CreateGroupAsync(newGroup))
+                {
+                    await LoadData();
+                    MessageBox.Show($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' успешно добавлена!",
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-        //        MessageBox.Show($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' успешно добавлена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-               
-        //        Logger.Info($"Группа, '{EnterGroup}' с отделением: '{department.NameOfDepartment}' была добавлена в базу данных.");
+                    Logger.Info($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' была добавлена в базу данных.");
 
-        //        EnterGroup = string.Empty;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //        Logger.Error($"Произошла ошибка добавления новой группы: '{EnterGroup}', отделение : '{department.NameOfDepartment}', ошибка: {ex}");
-        //    }
-        //}
+                    EnterGroup = string.Empty;
+                    OnPropertyChanged(nameof(EnterGroup));
+                }
+                else
+                {
+                    MessageBox.Show("Не удалось добавить группу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Произошла ошибка добавления новой группы: '{EnterGroup}', ошибка: {ex}");
+            }
+        }
 
         private void ReloadPage()
         {
@@ -295,31 +305,105 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        //private void AddNewItem(object parameter)
-        //{
-        //    if (DepartmentsVisibility == Visibility.Visible)
-        //        AddItem<Department>(_context.Departments, Departments);
-        //    else if (GroupsVisibility == Visibility.Visible)
-        //        AddGroup();
-        //    else if (AudiencesVisibility == Visibility.Visible)
-        //        AddItem<Audience>(_context.Audiences, Audiences);
-        //    else if (TeachersVisibility == Visibility.Visible)
-        //        AddItem<Teacher>(_context.Teachers, Teachers);
-        //    else if (DisciplinesVisibility == Visibility.Visible)
-        //        AddItem<Discipline>(_context.Disciplines, Disciplines);
-        //    else if (ManagersVisibility == Visibility.Visible)
-        //        AddItem<Manager>(_context.Managers, Managers);
-        //    else if (DepartmentOwnersVisibility == Visibility.Visible)
-        //        AddItem<DepartmentOwner>(_context.DepartmentOwners, DepartmentOwners);
-        //}
-
-        private void AddItem<T>(DbSet<T> dbSet, ObservableCollection<T> collection) where T : class, new()
+        private void AddNewItem(object parameter)
         {
-            var newItem = new T();
-            dbSet.Add(newItem);
-            collection.Add(newItem);
-            SelectedItem = newItem;
-            IsEditing = true;
+            var service = GetCurrentService();
+            if (service == null) return;
+
+            AddItemToGrid(service);
+        }
+
+        private void AddItemToGrid<T>(IEntityService<T> service) where T : BaseDto
+        {
+            var newItem = service.CreateNewItem();
+            var collection = GetCurrentCollection<T>();
+
+            if (collection != null)
+            {
+                collection.Add(newItem);
+                SelectedItem = newItem;
+                IsEditing = true;
+            }
+        }
+
+        private ObservableCollection<T> GetCurrentCollection<T>() where T : BaseDto
+        {
+            return typeof(T).Name switch
+            {
+                nameof(DepartmentDto) => Departments as ObservableCollection<T>,
+                nameof(GroupDto) => Groups as ObservableCollection<T>,
+                nameof(TeacherDto) => Teachers as ObservableCollection<T>,
+                nameof(AudienceDto) => Audiences as ObservableCollection<T>,
+                nameof(DisciplineDto) => Disciplines as ObservableCollection<T>,
+                _ => null
+            };
+        }
+
+        private async void SaveChanges(object parameter)
+        {
+            try
+            {
+                if (SelectedItem is not BaseDto selectedDto) return;
+
+                var service = GetServiceForItem(SelectedItem);
+                if (service == null) return;
+
+                if (selectedDto.IsNew)
+                {
+                    await SaveNewItem(service, selectedDto);
+                }
+                else
+                {
+                    await UpdateExistingItem(service, selectedDto);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении: {ex.Message}");
+                Logger.Error($"Ошибка сохранения: {ex}");
+            }
+        }
+
+        private async Task SaveNewItem<T>(IEntityService<T> service, T item) where T : BaseDto
+        {
+            if (!ValidateItemBeforeSave(item))
+            {
+                MessageBox.Show("Заполните все обязательные поля", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (await service.CreateAsync(item))
+            {
+                item.IsNew = false;
+                item.IsEditing = false;
+                item.IsPersisted = true;
+
+                MessageBox.Show("Элемент сохранен успешно!", "Успех");
+                Logger.Info($"{service.GetEntityName()} создана");
+            }
+        }
+
+        private async Task UpdateExistingItem<T>(IEntityService<T> service, T item) where T : BaseDto
+        {
+            if (await service.UpdateAsync(item))
+            {
+                item.IsEditing = false;
+                MessageBox.Show("Изменения сохранены успешно!", "Успех");
+                Logger.Info($"{service.GetEntityName()} обновлена");
+            }
+        }
+
+        private bool ValidateItemBeforeSave<T>(T item) where T : BaseDto
+        {
+            return item switch
+            {
+                DepartmentDto department => !string.IsNullOrWhiteSpace(department.NameOfDepartment),
+                GroupDto group => !string.IsNullOrWhiteSpace(group.NameOfGroup) && group.IdDepartment > 0,
+                TeacherDto teacher => !string.IsNullOrWhiteSpace(teacher.FullName),
+                AudienceDto audience => !string.IsNullOrWhiteSpace(audience.NumberAudience.ToString()),
+                DisciplineDto discipline => !string.IsNullOrWhiteSpace(discipline.NameDiscipline),
+                _ => false
+            };
         }
 
         private void AddGroup()
@@ -337,52 +421,26 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        //private void DeleteItem(object parameter)
-        //{
-        //    var itemToDelete = parameter;
-        //    if (itemToDelete == null) return;
+        private async void DeleteItem(object parameter)
+        {
+            if (parameter is not BaseDto item) return;
 
-        //    var result = MessageBox.Show("Вы уверены, что хотите удалить выбранную запись?",
-        //        "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            // Если это временный объект - просто удаляем из коллекции
+            if (item.IsNew && !item.IsPersisted)
+            {
+                var collection = GetCurrentCollection(item.GetType());
+                collection?.Remove(item);
+                return;
+            }
 
-        //    if (result == MessageBoxResult.Yes)
-        //    {
-        //        try
-        //        {
-        //            _context.Remove(itemToDelete);
+            var result = MessageBox.Show("Вы уверены, что хотите удалить выбранную запись?",
+                "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
-        //            if (itemToDelete is Group group)
-        //            {
-        //                Groups.Remove(group);
-        //                if (SelectedItem == group) SelectedItem = null;
-        //                Logger.Warn($"Группа '{group.NameOfGroup}' была удалена из базы данных.");
-        //            }
-
-        //            else if (itemToDelete is Audience audience)
-        //            {
-        //                Audiences.Remove(audience);
-        //                if (SelectedItem == audience) SelectedItem = null;
-        //                Logger.Warn($"Аудитория'{audience.NumberAudience}' была удалена из базы данных.");
-        //            }
-
-        //            else if (itemToDelete is Discipline discipline)
-        //            {
-        //                Disciplines.Remove(discipline);
-        //                if (SelectedItem == discipline) SelectedItem = null;
-        //                Logger.Warn($"Дисциплина '{discipline.NameDiscipline}' была удалена из базы данных.");
-        //            }
-
-        //            _context.SaveChanges();
-        //            MessageBox.Show("Запись удалена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            _context.ChangeTracker.Clear();
-        //            Logger.Error($"Ошибка при удалении данных из базы данных: {ex}");
-        //        }
-        //    }
-        //}
+            if (result == MessageBoxResult.Yes)
+            {
+                await DeleteItemAsync(item);
+            }
+        }
         private void EditItem(object parameter)
         {
             SelectedItem = parameter;
@@ -392,23 +450,50 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        //private void SaveChanges(object parameter)
-        //{
-        //    try
-        //    {
-        //        _context.SaveChanges();
-        //        IsEditing = false;
-        //        MessageBox.Show("Изменения сохранены успешно!", "Успех",
-        //            MessageBoxButton.OK, MessageBoxImage.Information);
-        //        Logger.Info("Изменения в базе данных были успешно выполнены.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка",
-        //            MessageBoxButton.OK, MessageBoxImage.Error);
-        //        Logger.Error($"Изменения в базе данных не выполнены, ошибка: {ex}");
-        //    }
-        //}
+        private async void SaveChanges(object parameter)
+        {
+            try
+            {
+                bool allSaved = true;
+
+                if (SelectedItem is DepartmentDto department && IsEditing)
+                {
+                    allSaved &= await _apiService.UpdateDepartmentAsync(department);
+                }
+                else if (SelectedItem is GroupDto group && IsEditing)
+                {
+                    allSaved &= await _apiService.UpdateGroupAsync(group);
+                }
+                else if (SelectedItem is TeacherDto teacher && IsEditing)
+                {
+                    allSaved &= await _apiService.UpdateTeacherAsync(teacher);
+                }
+                else if (SelectedItem is AudienceDto audience && IsEditing)
+                {
+                    allSaved &= await _apiService.UpdateAudienceAsync(audience);
+                }
+                else if (SelectedItem is DisciplineDto discipline && IsEditing)
+                {
+                    allSaved &= await _apiService.UpdateDisciplineAsync(discipline);
+                }
+
+                if (allSaved)
+                {
+                    IsEditing = false;
+                    MessageBox.Show("Изменения сохранены успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Logger.Info("Изменения в базе данных были успешно выполнены.");
+                }
+                else
+                {
+                    MessageBox.Show("Не удалось сохранить некоторые изменения", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Изменения в базе данных не выполнены, ошибка: {ex}");
+            }
+        }
 
         private async Task LoadData()
         {
