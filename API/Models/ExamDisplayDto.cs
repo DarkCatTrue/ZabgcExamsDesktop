@@ -25,5 +25,6 @@ namespace ZabgcExamsDesktop.API.Models
         public string DisciplineName { get; set; } = string.Empty;
         public string TeachersDisplay { get; set; } = string.Empty;
         public string AudienceNumber { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
     }
 }

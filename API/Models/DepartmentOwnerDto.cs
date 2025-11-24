@@ -7,5 +7,7 @@
         public int IdDepartment { get; set; }
 
         public string OwnerName { get; set; } = null!;
+        public string DepartmentName { get; set; } = string.Empty;
+
     }
 }

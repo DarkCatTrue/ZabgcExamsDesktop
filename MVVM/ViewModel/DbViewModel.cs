@@ -86,7 +86,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             LoadTableCommand = new RelayCommand(ShowGrid);
             DeleteCommand = new RelayCommand(DeleteItem);
             EditCommand = new RelayCommand(EditItem);
-            SaveCommand = new RelayCommand(SaveChanges);
+            SaveCommand = new RelayCommand(SaveItem);
             AddCommand = new RelayCommand(AddNewItem);
             AddNewGroupCommand = new RelayCommand(AddNewGroup);
         }
@@ -130,6 +130,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                     EnterGroup = string.Empty;
                     OnPropertyChanged(nameof(EnterGroup));
+                    ReloadPage();
                 }
                 else
                 {
@@ -307,93 +308,124 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private void AddNewItem(object parameter)
         {
-            var service = GetCurrentService();
-            if (service == null) return;
+            IsEditing = true;
 
-            AddItemToGrid(service);
-        }
-
-        private void AddItemToGrid<T>(IEntityService<T> service) where T : BaseDto
-        {
-            var newItem = service.CreateNewItem();
-            var collection = GetCurrentCollection<T>();
-
-            if (collection != null)
+            if (DepartmentsVisibility == Visibility.Visible)
             {
-                collection.Add(newItem);
+                var newItem = new DepartmentDto { IsNew = true, IsEditing = true };
+                Departments.Add(newItem);
                 SelectedItem = newItem;
-                IsEditing = true;
+            }
+            else if (GroupsVisibility == Visibility.Visible)
+            {
+                AddGroup();
+            }
+            else if (TeachersVisibility == Visibility.Visible)
+            {
+                var newItem = new TeacherDto { IsNew = true, IsEditing = true };
+                Teachers.Add(newItem);
+                SelectedItem = newItem;
+            }
+            else if (AudiencesVisibility == Visibility.Visible)
+            {
+                var newItem = new AudienceDto { IsNew = true, IsEditing = true };
+                Audiences.Add(newItem);
+                SelectedItem = newItem;
+            }
+            else if (DisciplinesVisibility == Visibility.Visible)
+            {
+                var newItem = new DisciplineDto { IsNew = true, IsEditing = true };
+                Disciplines.Add(newItem);
+                SelectedItem = newItem;
             }
         }
 
-        private ObservableCollection<T> GetCurrentCollection<T>() where T : BaseDto
-        {
-            return typeof(T).Name switch
-            {
-                nameof(DepartmentDto) => Departments as ObservableCollection<T>,
-                nameof(GroupDto) => Groups as ObservableCollection<T>,
-                nameof(TeacherDto) => Teachers as ObservableCollection<T>,
-                nameof(AudienceDto) => Audiences as ObservableCollection<T>,
-                nameof(DisciplineDto) => Disciplines as ObservableCollection<T>,
-                _ => null
-            };
-        }
-
-        private async void SaveChanges(object parameter)
+        private async void SaveItem(object parameter)
         {
             try
             {
-                if (SelectedItem is not BaseDto selectedDto) return;
-
-                var service = GetServiceForItem(SelectedItem);
-                if (service == null) return;
-
-                if (selectedDto.IsNew)
+                if (DepartmentsVisibility == Visibility.Visible)
                 {
-                    await SaveNewItem(service, selectedDto);
+                    await SaveAllNewItems(Departments, "кафедр");
                 }
-                else
+                else if (GroupsVisibility == Visibility.Visible)
                 {
-                    await UpdateExistingItem(service, selectedDto);
+                    await SaveAllNewItems(Groups, "групп");
+                }
+                else if (TeachersVisibility == Visibility.Visible)
+                {
+                    await SaveAllNewItems(Teachers, "преподавателей");
+                }
+                else if (AudiencesVisibility == Visibility.Visible)
+                {
+                    await SaveAllNewItems(Audiences, "аудиторий");
+                }
+                else if (DisciplinesVisibility == Visibility.Visible)
+                {
+                    await SaveAllNewItems(Disciplines, "дисциплин");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при сохранении: {ex.Message}");
-                Logger.Error($"Ошибка сохранения: {ex}");
+                MessageBox.Show($"Ошибка сохранения: {ex.Message}");
             }
         }
 
-        private async Task SaveNewItem<T>(IEntityService<T> service, T item) where T : BaseDto
+        private async Task SaveAllNewItems<T>(ObservableCollection<T> collection, string entityName) where T : BaseDto
         {
-            if (!ValidateItemBeforeSave(item))
+            var newItems = collection.Where(x => x.IsNew).ToList();
+
+            if (!newItems.Any())
             {
-                MessageBox.Show("Заполните все обязательные поля", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"Нет новых {entityName} для сохранения");
                 return;
             }
 
-            if (await service.CreateAsync(item))
+            var invalidItems = newItems.Where(item => !IsItemValid(item)).ToList();
+            if (invalidItems.Any())
             {
-                item.IsNew = false;
-                item.IsEditing = false;
-                item.IsPersisted = true;
-
-                MessageBox.Show("Элемент сохранен успешно!", "Успех");
-                Logger.Info($"{service.GetEntityName()} создана");
+                MessageBox.Show($"Заполните все обязательные поля для новых {entityName}");
+                return;
             }
+
+            int successCount = 0;
+            int errorCount = 0;
+
+            foreach (var item in newItems)
+            {
+                try
+                {
+                    bool success = await SaveSingleItem(item);
+
+                    if (success)
+                    {
+                        successCount++;
+                        item.IsNew = false;
+                        item.IsEditing = false;
+                    }
+                    else
+                    {
+                        errorCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorCount++;
+                    Console.WriteLine($"Ошибка сохранения {entityName}: {ex.Message}");
+                }
+            }
+
+            await LoadData();
+
+            string message = $"Сохранено {successCount} из {newItems.Count} {entityName}";
+            if (errorCount > 0)
+            {
+                message += $"\nНе удалось сохранить {errorCount} {entityName}";
+            }
+            MessageBox.Show(message, "Результат сохранения");
         }
 
-        private async Task UpdateExistingItem<T>(IEntityService<T> service, T item) where T : BaseDto
-        {
-            if (await service.UpdateAsync(item))
-            {
-                item.IsEditing = false;
-                MessageBox.Show("Изменения сохранены успешно!", "Успех");
-                Logger.Info($"{service.GetEntityName()} обновлена");
-            }
-        }
-
-        private bool ValidateItemBeforeSave<T>(T item) where T : BaseDto
+        private bool IsItemValid<T>(T item) where T : BaseDto
         {
             return item switch
             {
@@ -402,6 +434,32 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 TeacherDto teacher => !string.IsNullOrWhiteSpace(teacher.FullName),
                 AudienceDto audience => !string.IsNullOrWhiteSpace(audience.NumberAudience.ToString()),
                 DisciplineDto discipline => !string.IsNullOrWhiteSpace(discipline.NameDiscipline),
+                _ => false
+            };
+        }
+
+        private async Task<bool> SaveSingleItem<T>(T item) where T : BaseDto
+        {
+            return item switch
+            {
+                DepartmentDto department => await _apiService.CreateDepartmentAsync(new DepartmentDto
+                { NameOfDepartment = department.NameOfDepartment.Trim() }),
+
+                GroupDto group => await _apiService.CreateGroupAsync(new GroupDto
+                {
+                    NameOfGroup = group.NameOfGroup.Trim(),
+                    IdDepartment = group.IdDepartment
+                }),
+
+                TeacherDto teacher => await _apiService.CreateTeacherAsync(new TeacherDto
+                { FullName = teacher.FullName.Trim() }),
+
+                AudienceDto audience => await _apiService.CreateAudienceAsync(new AudienceDto
+                { NumberAudience = audience.NumberAudience }),
+
+                DisciplineDto discipline => await _apiService.CreateDisciplineAsync(new DisciplineDto
+                { NameDiscipline = discipline.NameDiscipline.Trim() }),
+
                 _ => false
             };
         }
@@ -423,22 +481,70 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private async void DeleteItem(object parameter)
         {
-            if (parameter is not BaseDto item) return;
-
-            // Если это временный объект - просто удаляем из коллекции
-            if (item.IsNew && !item.IsPersisted)
-            {
-                var collection = GetCurrentCollection(item.GetType());
-                collection?.Remove(item);
-                return;
-            }
+            if (parameter == null) return;
 
             var result = MessageBox.Show("Вы уверены, что хотите удалить выбранную запись?",
                 "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
             {
-                await DeleteItemAsync(item);
+                try
+                {
+                    bool success = false;
+                    string entityName = "";
+                    string itemName = "";
+
+                    if (parameter is DepartmentDto department)
+                    {
+                        success = await _apiService.DeleteDepartmentAsync(department.IdDepartment);
+                        entityName = "кафедру";
+                        itemName = department.NameOfDepartment;
+                        Logger.Warn($"Кафедра '{itemName}' была удалена из базы данных.");
+                    }
+                    else if (parameter is GroupDto group)
+                    {
+                        success = await _apiService.DeleteGroupAsync(group.IdGroup);
+                        entityName = "группу";
+                        itemName = group.NameOfGroup;
+                        Logger.Warn($"Группа '{itemName}' была удалена из базы данных.");
+                    }
+                    else if (parameter is AudienceDto audience)
+                    {
+                        success = await _apiService.DeleteAudienceAsync(audience.IdAudience);
+                        entityName = "аудиторию";
+                        itemName = audience.NumberAudience.ToString();
+                        Logger.Warn($"Аудитория '{itemName}' была удалена из базы данных.");
+                    }
+                    else if (parameter is TeacherDto teacher)
+                    {
+                        success = await _apiService.DeleteTeacherAsync(teacher.IdTeacher);
+                        entityName = "преподавателя";
+                        itemName = teacher.FullName;
+                        Logger.Warn($"Преподаватель '{itemName}' была удален из базы данных.");
+                    }
+                    else if (parameter is DisciplineDto discipline)
+                    {
+                        success = await _apiService.DeleteDisciplineAsync(discipline.IdDiscipline);
+                        entityName = "дисциплину";
+                        itemName = discipline.NameDiscipline;
+                        Logger.Warn($"Дисциплина '{itemName}' была удалена из базы данных.");
+                    }
+
+                    if (success)
+                    {
+                        await LoadData();
+                        MessageBox.Show($"{entityName} '{itemName}' удалена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Не удалось удалить {entityName}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Logger.Error($"Ошибка при удалении данных из базы данных: {ex}");
+                }
             }
         }
         private void EditItem(object parameter)
@@ -449,75 +555,45 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 IsEditing = true;
             }
         }
-
-        private async void SaveChanges(object parameter)
-        {
-            try
-            {
-                bool allSaved = true;
-
-                if (SelectedItem is DepartmentDto department && IsEditing)
-                {
-                    allSaved &= await _apiService.UpdateDepartmentAsync(department);
-                }
-                else if (SelectedItem is GroupDto group && IsEditing)
-                {
-                    allSaved &= await _apiService.UpdateGroupAsync(group);
-                }
-                else if (SelectedItem is TeacherDto teacher && IsEditing)
-                {
-                    allSaved &= await _apiService.UpdateTeacherAsync(teacher);
-                }
-                else if (SelectedItem is AudienceDto audience && IsEditing)
-                {
-                    allSaved &= await _apiService.UpdateAudienceAsync(audience);
-                }
-                else if (SelectedItem is DisciplineDto discipline && IsEditing)
-                {
-                    allSaved &= await _apiService.UpdateDisciplineAsync(discipline);
-                }
-
-                if (allSaved)
-                {
-                    IsEditing = false;
-                    MessageBox.Show("Изменения сохранены успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    Logger.Info("Изменения в базе данных были успешно выполнены.");
-                }
-                else
-                {
-                    MessageBox.Show("Не удалось сохранить некоторые изменения", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                Logger.Error($"Изменения в базе данных не выполнены, ошибка: {ex}");
-            }
-        }
-
         private async Task LoadData()
         {
             try
             {
 
-                var departments = _apiService.GetDepartmentsAsync();
-                var groups = _apiService.GetGroupsAsync();
+                var departmentsTask = _apiService.GetDepartmentsAsync();
+                var groupsTask = _apiService.GetGroupsAsync();
                 var teachers = _apiService.GetTeachersAsync();
                 var audiences = _apiService.GetAudiencesAsync();
                 var typeOfExams = _apiService.GetTypeOfExamsAsync();
                 var disciplines = _apiService.GetDisciplinesAsync();
                 var managers = _apiService.GetManagersAsync();
-                var departmentOwners = _apiService.GetDepartmentOwnersAsync();
+                var departmentOwnersTask = _apiService.GetDepartmentOwnersAsync();
                 
-                await Task.WhenAll(departments, groups, teachers, audiences, managers, typeOfExams, disciplines, departmentOwners);
+                await Task.WhenAll(departmentsTask, groupsTask, teachers, audiences, managers, typeOfExams, disciplines, departmentOwnersTask);
 
-                Departments = new ObservableCollection<DepartmentDto>(departments.Result);
-                Groups = new ObservableCollection<GroupDto>(groups.Result);
+                var departments = departmentsTask.Result;
+                var groups = groupsTask.Result;
+                var departmentOwners = departmentOwnersTask.Result;
+
+                foreach (var group in groups)
+                {
+                    var department = departments.FirstOrDefault(d => d.IdDepartment == group.IdDepartment);
+                    group.DepartmentName = department?.NameOfDepartment ?? "Не указано";
+                }
+
+                foreach (var departmentOwner in departmentOwners)
+                {
+                    var department = departments.FirstOrDefault(d => d.IdDepartment == departmentOwner.IdDepartment);
+                    departmentOwner.DepartmentName = department?.NameOfDepartment ?? "Не указано";
+                }
+
+                Departments = new ObservableCollection<DepartmentDto>(departments);
+                Groups = new ObservableCollection<GroupDto>(groups);
                 Audiences = new ObservableCollection<AudienceDto>(audiences.Result);
                 Teachers = new ObservableCollection<TeacherDto>(teachers.Result);
                 Disciplines = new ObservableCollection<DisciplineDto>(disciplines.Result);
                 Managers = new ObservableCollection<ManagerDto>(managers.Result);
-                DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners.Result);
+                DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners);
                 Logger.Info("Данные для редактирования базы данных успешно загружены.");
             }
             catch (Exception ex)

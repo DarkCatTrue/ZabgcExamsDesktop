@@ -5,5 +5,7 @@
         public int IdGroup { get; set; }
         public string NameOfGroup { get; set; } = string.Empty;
         public int IdDepartment { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
     }
 }

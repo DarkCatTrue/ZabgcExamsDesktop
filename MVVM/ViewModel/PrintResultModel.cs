@@ -1,21 +1,15 @@
-﻿using System.Collections.ObjectModel;
+﻿using Microsoft.Win32;
+using NLog;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using Microsoft.EntityFrameworkCore;
+using ZabgcExamsDesktop.API;
+using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
-using iText.Kernel.Pdf;
-using iText.Kernel.Font;
-using iText.Kernel.Geom;
-using iText.Layout.Element;
-using iText.Layout;
-using iText.Layout.Properties;
-using TextAlignment = iText.Layout.Properties.TextAlignment;
-using iText.IO.Font;
-using HorizontalAlignment = iText.Layout.Properties.HorizontalAlignment;
-using NLog;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
@@ -23,43 +17,55 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        //private ObservableCollection<TypeOfLesson> lessons;
-        //private ObservableCollection<TypeOfExam> typeExams;
-        //private ObservableCollection<Department> departments;
-        //private ObservableCollection<Group> groups;
-        //private ObservableCollection<Teacher> teachers;
-        //private ObservableCollection<Audience> audiences;
-        //private ObservableCollection<Qualification> qualifications;
-        //private ObservableCollection<Discipline> disciplines;
-        //private ObservableCollection<Group> _filteredGroups;
+        private readonly ApiService _apiService;
+        private readonly PdfReportService _pdfReportService;
 
-        //private ObservableCollection<DepartmentOwner> _departmentOwner;
-        //private ObservableCollection<Manager> _managers;
+        public ICommand SaveToPDFCommand { get; }
+        public ICommand LoadDbCommand { get; }
+        public ICommand BackToSearch { get; }
+        public ICommand SearchCommand { get; }
+        public ICommand DeleteSingleItemCommand { get; }
 
-        //private Department _selectedDepartment;
-        //private Group _selectedGroup;
-        //private Exam _selectedExam;
+        public PrintResultModel()
+        {
+            _apiService = new ApiService();
+            _pdfReportService = new PdfReportService(_apiService);
+            BackToSearch = new RelayCommand(BackToPage);
+            SearchCommand = new RelayCommand(async (param) => await SearchAsync());
+            SaveToPDFCommand = new RelayCommand(async (param) => await SaveToPdfAsync());
+            DeleteSingleItemCommand = new RelayCommand(DeleteSingleItem);
+            LoadDbAsync();
+        }
 
+        public ObservableCollection<ExamDisplayDto> SearchResults { get; set; } = new();
+        public ObservableCollection<DepartmentDto> Departments { get; set; } = new();
+        public ObservableCollection<GroupDto> Groups { get; set; } = new();
+        public ObservableCollection<GroupDto> FilteredGroups { get; set; } = new();
+        public string SelectedResult { get; set; }
+        
+        private ObservableCollection<GroupDto> _selectedGroups = new();
+        private ObservableCollection<DepartmentDto> _selectedDepartment;
 
-        //private ObservableCollection<Exam> _searchResults;
-        //private HashSet<Exam> _modifiedExams = new HashSet<Exam>();
+        public DepartmentDto SelectedDepartment
+        {
+            get => _selectedDepartment;
+            set
+            {
+                _selectedDepartment = value;
+                OnPropertyChanged();
+                UpdateFilteredGroups(); // Автоматически обновляем группы при изменении
+            }
+        }
 
-
-        //public ObservableCollection<DepartmentOwner> DepartmentOwners { get => _departmentOwner; set { _departmentOwner = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Manager> Managers { get => _managers; set { _managers = value; OnPropertyChanged(); } }
-
-        //public ObservableCollection<Department> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Group> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Group> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Teacher> Teacher { get => teachers; set { teachers = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Audience> Audience { get => audiences; set { audiences = value; OnPropertyChanged(); } }
-        //public ObservableCollection<TypeOfLesson> Lesson { get => lessons; set { lessons = value; OnPropertyChanged(); } }
-        //public ObservableCollection<TypeOfExam> TypeExam { get => typeExams; set { typeExams = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Qualification> Qualification { get => qualifications; set { qualifications = value; OnPropertyChanged(); } }
-        //public ObservableCollection<Discipline> Discipline { get => disciplines; set { disciplines = value; OnPropertyChanged(); } }
-
-
-        private string _selectedResult;
+        public ObservableCollection<GroupDto> SelectedGroups
+        {
+            get => _selectedGroups;
+            set
+            {
+                _selectedGroups = value;
+                OnPropertyChanged();
+            }
+        }
 
         public List<string> ResultItems { get; } = new List<string>
         {
@@ -68,622 +74,269 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             "Квалификационный"
         };
 
-        public string SelectedResult
+        public async Task<List<ExamDisplayDto>> SearchExamsAsync(string typeOfExamName, int? departmentId = null, List<int> groupIds = null)
         {
-            get => _selectedResult;
-            set
+            try
             {
-                _selectedResult = value;
-                OnPropertyChanged(nameof(SelectedResult));
+                var allExams = await _apiService.GetExamsDisplayAsync();
+
+                var filteredExams = allExams.AsEnumerable();
+
+                filteredExams = typeOfExamName switch
+                {
+                    "Стандартный" => filteredExams.Where(e => e.TypeOfExamName.Contains("стандарт", StringComparison.OrdinalIgnoreCase)),
+                    "ПМ" => filteredExams.Where(e => e.TypeOfExamName.Contains("модуль", StringComparison.OrdinalIgnoreCase) ||
+                                                     e.TypeOfExamName.Contains("ПМ", StringComparison.OrdinalIgnoreCase)),
+                    "Квалификационный" => filteredExams.Where(e => e.TypeOfExamName.Contains("квалификац", StringComparison.OrdinalIgnoreCase)),
+                    _ => filteredExams
+                };
+
+                if (departmentId.HasValue)
+                {
+                    filteredExams = filteredExams.Where(e =>
+                        Departments.FirstOrDefault(d => d.NameOfDepartment == e.DepartmentName)?.IdDepartment == departmentId);
+                }
+
+                if (groupIds != null && groupIds.Any())
+                {
+                    filteredExams = filteredExams.Where(e => groupIds.Contains(e.IdGroup));
+                }
+
+                var result = filteredExams
+                    .GroupBy(e => new { e.DepartmentName, e.GroupName })
+                    .OrderBy(g => g.Key.DepartmentName)
+                    .ThenBy(g => g.Key.GroupName)
+                    .SelectMany(g => g
+                        .OrderBy(e => e.DateEvent)
+                        .ThenBy(e => e.DateEvent.TimeOfDay))
+                    .ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Search error: {ex.Message}");
+                return new List<ExamDisplayDto>();
             }
         }
 
-        //public Department SelectedDepartment
-        //{
-        //    get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
-        //}
-        //public Group SelectedGroup
-        //{
-        //    get => _selectedGroup; set { _selectedGroup = value; OnPropertyChanged(); }
-        //}
-        //public Exam SelectedExam
-        //{
-        //    get => _selectedExam;
-        //    set
-        //    {
-        //        _selectedExam = value;
-        //        OnPropertyChanged();
-        //    }
-        //}
-
-        //public ObservableCollection<Exam> SearchResults
-        //{
-        //    get => _searchResults; set
-        //    {
-        //        _searchResults = value; foreach (var exam in _searchResults)
-        //        {
-        //            exam.PropertyChanged += Exam_PropertyChanged;
-        //        }
-        //        OnPropertyChanged(nameof(SearchResults));
-        //        OnPropertyChanged(nameof(CanSaveToPdf));
-        //    }
-        //}
-        //public bool CanSaveToPdf => SearchResults?.Count > 0;
-
-        //private void Exam_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        //{
-        //    if (sender is Exam exam)
-        //    {
-        //        _modifiedExams.Add(exam);
-        //    }
-        //}
-
-        public ICommand PrintResultCommand { get; set; }
-        public ICommand SaveToPDFCommand { get; set; }
-        public ICommand BackToSearch { get; set; }
-        public ICommand DeleteRowCommand { get; set; }
-
-        public PrintResultModel()
+        private async Task SearchAsync()
         {
-            //LoadDb();
-            BackToSearch = new RelayCommand(BackToPage);
-            SaveToPDFCommand = new RelayCommand(ExecuteSaveToPdf);
-        }
-        private void ExecuteSaveToPdf(object parameter)
-        {
-            //SaveToPdf(parameter);
+
+            try
+            {
+                if (!ValidateSearchParameters())
+                    return;
+
+                var typeOfExamName = GetTypeOfExamName();
+                var departmentId = SelectedDepartment?.IdDepartment;
+                var groupIds = SelectedGroups?.Select(g => g.IdGroup).ToList();
+
+                var results = await SearchExamsAsync(typeOfExamName, departmentId, groupIds);
+
+                foreach (var item in results)
+                {
+                    item.IsSelected = false;
+                }
+
+                SearchResults = new ObservableCollection<ExamDisplayDto>(results);
+                OnPropertyChanged(nameof(SearchResults));
+
+                ShowSearchResultMessage(results.Count);
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage($"Ошибка поиска: {ex.Message}");
+            }
         }
 
-        //private void SaveToPdf(object parameter)
-        //{
-        //    if (SearchResults == null || !SearchResults.Any())
-        //    {
-        //        MessageBox.Show("Нет данных для сохранения в PDF", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-        //        return;
-        //    }
-
-        //    var saveFileDialog = new Microsoft.Win32.SaveFileDialog
-        //    {
-        //        Filter = "PDF files (*.pdf)|*.pdf",
-        //        FileName = $"Расписание экзаменов {DateTime.Now:yyyy-MM-dd}",
-        //        DefaultExt = ".pdf"
-        //    };
-
-        //    if (SelectedDepartment == null || SelectedResult == null)
-        //    {
-        //        MessageBox.Show("Поле с выбранным отделением и поле с типом отчёта должны быть заполнены", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-        //    }
-        //    else
-        //    {
-        //        if (saveFileDialog.ShowDialog() == true)
-        //        {
-        //            try
-        //            {
-        //                using var context = new ApplicationDbContext();
-
-        //                using (var writer = new PdfWriter(saveFileDialog.FileName))
-        //                {
-        //                    using (var pdf = new PdfDocument(writer))
-        //                    {
-        //                        var document = new Document(pdf, PageSize.A4);
-        //                        document.SetMargins(40, 40, 40, 40);
-
-        //                        PdfFont fontNormal = PdfFontFactory.CreateFont(
-        //                            @"C:\Windows\Fonts\times.ttf",
-        //                            PdfEncodings.IDENTITY_H
-        //                        );
-
-        //                        PdfFont fontBold = PdfFontFactory.CreateFont(
-        //                            @"C:\Windows\Fonts\timesbd.ttf",
-        //                            PdfEncodings.IDENTITY_H
-        //                        );
-
-        //                        PdfFont fontItalic = PdfFontFactory.CreateFont(
-        //                            @"C:\Windows\Fonts\timesi.ttf",
-        //                            PdfEncodings.IDENTITY_H
-        //                        );
-
-        //                        // БЛОК "УТВЕРЖДАЮ" - ВЫРАВНИВАНИЕ ВПРАВО
-        //                        var approveTable = new Table(1)
-        //                            .SetWidth(UnitValue.CreatePercentValue(100))
-        //                            .SetHorizontalAlignment(HorizontalAlignment.RIGHT)
-        //                            .SetMarginBottom(20);
-
-        //                        // Все элементы блока выравниваем вправо
-        //                        approveTable.AddCell(new Cell()
-        //                            .Add(new Paragraph("Утверждаю:").SetFont(fontNormal).SetFontSize(12))
-        //                            .SetTextAlignment(TextAlignment.RIGHT)
-        //                            .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                            .SetPadding(2));
-
-
-        //                        approveTable.AddCell(new Cell()
-        //                            .Add(new Paragraph("Директор").SetFont(fontNormal).SetFontSize(12))
-        //                            .SetTextAlignment(TextAlignment.RIGHT)
-        //                            .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                            .SetPadding(2));
-
-        //                        approveTable.AddCell(new Cell()
-        //                            .Add(new Paragraph("ГАПОУ «ЗабГК им. М.И. Агошкова»").SetFont(fontNormal).SetFontSize(12))
-        //                            .SetTextAlignment(TextAlignment.RIGHT)
-        //                            .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                            .SetPadding(2));
-
-        //                        var Director = context.Managers.Where(m => m.IdManager == 1).Select(m => m.FullName).First();
-
-        //                        approveTable.AddCell(new Cell()
-        //                            .Add(new Paragraph($"_________ {Director}").SetFont(fontNormal).SetFontSize(12))
-        //                            .SetTextAlignment(TextAlignment.RIGHT)
-        //                            .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                            .SetPadding(2));
-
-        //                        approveTable.AddCell(new Cell()
-        //                            .Add(new Paragraph("«___» ________ 20___ г.").SetFont(fontNormal).SetFontSize(12))
-        //                            .SetTextAlignment(TextAlignment.RIGHT)
-        //                            .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                            .SetPadding(2));
-
-        //                        document.Add(approveTable);
-
-        //                        document.Add(new Paragraph("\n"));
-
-        //                        switch (SelectedResult)
-        //                        {
-        //                            case "Стандартный":
-        //                                document.Add(new Paragraph("Расписание экзаменов")
-        //                                .SetFont(fontBold)
-        //                                .SetFontSize(14)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-        //                            case "По модулю":
-        //                                document.Add(new Paragraph("Расписание экзаменов по модулю")
-        //                                .SetFont(fontBold)
-        //                                .SetFontSize(14)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-        //                            case "Квалификационный":
-        //                                document.Add(new Paragraph("Расписание экзаменов квалификационных")
-        //                                .SetFont(fontBold)
-        //                                .SetFontSize(14)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-        //                        }
-
-
-        //                        switch (SelectedDepartment.NameOfDepartment)
-        //                        {
-        //                            case "Информационное":
-        //                                document.Add(new Paragraph("Отделение информационных технологий и экономики")
-        //                                .SetFont(fontItalic)
-        //                                .SetFontSize(12)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-
-        //                            case "Горное":
-        //                                document.Add(new Paragraph("Горное отделение")
-        //                                .SetFont(fontItalic)
-        //                                .SetFontSize(12)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-
-        //                            case "Геолого-маркшейдерское":
-        //                                document.Add(new Paragraph("Геолого-маркшейдерское отделение")
-        //                                .SetFont(fontItalic)
-        //                                .SetFontSize(12)
-        //                                .SetTextAlignment(TextAlignment.CENTER));
-        //                                break;
-        //                        }
-
-
-        //                        document.Add(new Paragraph("Таблица")
-        //                         .SetFont(fontNormal)
-        //                         .SetFontSize(12)
-        //                         .SetTextAlignment(TextAlignment.RIGHT)
-        //                         .SetMarginTop(5)
-        //                         .SetMarginBottom(10));
-
-
-        //                        // Основная таблица с экзаменами
-        //                        switch (SelectedResult)
-        //                        {
-        //                            case "Стандартный":
-        //                                Logger.Info("Формирование отчёта для стандартных экзаменов.");
-        //                                var mainTable = CreateExamsTable(SearchResults, fontNormal, fontBold);
-        //                                document.Add(mainTable);
-        //                                break;
-        //                            case "По модулю":
-        //                                Logger.Info("Формирование отчёта для профессиональных модулей.");
-        //                                mainTable = CreateExamsTableModules(SearchResults, fontNormal, fontBold);
-        //                                document.Add(mainTable);
-        //                                break;
-        //                            case "Квалификационный":
-        //                                Logger.Info("Формирование отчёта для квалификационных экзаменов.");
-        //                                mainTable = CreateExamsTableModules(SearchResults, fontNormal, fontBold);
-        //                                document.Add(mainTable);
-        //                                break;
-        //                        }
-        //                        // Блок "Согласовано"
-        //                        document.Add(new Paragraph("Согласовано:")
-        //                            .SetFont(fontBold)
-        //                            .SetFontSize(12)
-        //                            .SetMarginTop(20));
-
-
-        //                        var StudyWorkEmployeeName = context.Managers.Where(m => m.IdManager == 2).Select(m => m.FullName).First();
-        //                        var OwnerStudyDepartmentName = context.Managers.Where(m => m.IdManager == 3).Select(m => m.FullName).First();
-
-        //                        var StudyWorkEmployee = context.Managers.Where(m => m.IdManager == 2).Select(m => m.Post).First();
-        //                        var OwnerStudyDepartment = context.Managers.Where(m => m.IdManager == 3).Select(m => m.Post).First();
-
-
-        //                        switch (SelectedDepartment.NameOfDepartment)
-        //                        {
-        //                            case "Информационное":
-        //                                Logger.Info("Формирование отчёта для информационного отделения.");
-        //                                var DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 1).Select(d => d.OwnerName).First();
-        //                                var agreements = new[]
-        //                        {
-        //                new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
-        //                new { Name = DepartmentOwner, Position = "Зав. отделением ИТ и Э" },
-        //                new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
-        //                };
-        //                                foreach (var item in agreements)
-        //                                {
-        //                                    // Создаем таблицу для каждой строки
-        //                                    var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
-        //                                        .SetWidth(UnitValue.CreatePercentValue(100))
-        //                                        .SetMarginTop(5);
-
-        //                                    // Должность слева
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Position).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.LEFT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    // Имя справа
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Name).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.RIGHT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    document.Add(lineTable);
-        //                                }
-
-        //                                document.Close();
-        //                                break;
-
-        //                            case "Горное":
-        //                                Logger.Info("Формирование отчёта для горного отделения.");
-        //                                DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 2).Select(d => d.OwnerName).First();
-        //                                agreements = new[]
-        //                        {
-        //                 new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
-        //                new { Name = DepartmentOwner, Position = "Зав. горным отделением" },
-        //                new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
-        //                };
-        //                                foreach (var item in agreements)
-        //                                {
-        //                                    // Создаем таблицу для каждой строки
-        //                                    var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
-        //                                        .SetWidth(UnitValue.CreatePercentValue(100))
-        //                                        .SetMarginTop(5);
-
-        //                                    // Имя слева
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Position).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.LEFT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    // Должность справа
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Name).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.RIGHT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    document.Add(lineTable);
-        //                                }
-
-        //                                document.Close();
-        //                                break;
-
-        //                            case "Геолого-маркшейдерское":
-        //                                Logger.Info("Формирование отчёта для геолого-маркшейдерского отделения.");
-        //                                DepartmentOwner = context.DepartmentOwners.Where(d => d.IdDepartment == 3).Select(d => d.OwnerName).First();
-        //                                agreements = new[]
-        //                        {
-        //                new { Name = StudyWorkEmployeeName, Position = StudyWorkEmployee },
-        //                new { Name = DepartmentOwner, Position = "Зав. Г-М отделением" },
-        //                new { Name = OwnerStudyDepartmentName, Position = OwnerStudyDepartment }
-        //                };
-        //                                foreach (var item in agreements)
-        //                                {
-        //                                    // Создаем таблицу для каждой строки
-        //                                    var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
-        //                                        .SetWidth(UnitValue.CreatePercentValue(100))
-        //                                        .SetMarginTop(5);
-
-        //                                    // Имя слева
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Position).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.LEFT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    // Должность справа
-        //                                    lineTable.AddCell(new Cell()
-        //                                        .Add(new Paragraph(item.Name).SetFont(fontNormal))
-        //                                        .SetTextAlignment(TextAlignment.RIGHT)
-        //                                        .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-        //                                        .SetPadding(0));
-
-        //                                    document.Add(lineTable);
-        //                                }
-
-        //                                document.Close();
-        //                                break;
-        //                        }
-        //                    }
-        //                }
-
-        //                MessageBox.Show($"Файл успешно сохранен: {saveFileDialog.FileName}", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                MessageBox.Show($"Ошибка при сохранении PDF: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            }
-        //        }
-        //    }
-        //}  
-
-    //    private Table CreateExamsTableModules(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
-    //    {
-    //        // Таблица с фиксированными ширинами колонок
-    //        var table = new Table(new float[] { 2, 2, 3, 2, 3 })
-    //            .SetWidth(UnitValue.CreatePercentValue(100))
-    //            .SetMarginTop(10)
-    //            .SetMarginBottom(10);
-
-    //        // Заголовки таблицы
-    //        var headers = new[]
-    //        {
-    //    "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК"
-    //};
-
-    //        foreach (var header in headers)
-    //        {
-    //            var cell = new Cell()
-    //                .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
-    //                .SetPadding(8);
-    //            table.AddHeaderCell(cell);
-    //        }
-
-    //        // Данные таблицы
-    //        foreach (var exam in exams.OrderBy(e => e.DateEvent))
-    //        {
-    //            // Дата (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6));
-
-    //            // Группа (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.IdGroupNavigation?.NameOfGroup ?? ""))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6);
-
-    //            // Дисциплина (по центру)
-    //            var disciplineText = $"{exam.IdDisciplineNavigation?.NameDiscipline ?? ""}";
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(disciplineText)
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6));
-
-    //            // Аудитория (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.IdAudienceNavigation?.NumberAudience?.ToString() ?? ""))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6);
-
-    //            // Преподаватели (по центру)
-    //            var teachers = exam.IdTeachers?.Any() == true ?
-    //                string.Join("\n", exam.IdTeachers.Select(t => t.FullName)) : "";
-    //            table.AddCell(new Cell()
-    //            .Add(new Paragraph(teachers)
-    //                .SetFont(fontNormal)
-    //                .SetFontSize(9))
-    //            .SetTextAlignment(TextAlignment.CENTER)
-    //            .SetPadding(6));
-    //        }
-
-    //        return table;
-    //    }
-
-
-
-    //    private Table CreateExamsTable(ObservableCollection<Exam> exams, PdfFont fontNormal, PdfFont fontBold)
-    //    {
-    //        // Таблица с фиксированными ширинами колонок
-    //        var table = new Table(new float[] { 2, 2, 2, 3, 2, 3 })
-    //            .SetWidth(UnitValue.CreatePercentValue(100))
-    //            .SetMarginTop(10)
-    //            .SetMarginBottom(10);
-
-    //        // Заголовки таблицы
-    //        var headers = new[]
-    //        {
-    //    "Дата", "Группа", "Консультация/Экзамен", "Дисциплина, МДК", "Аудитория", "Члены ЭК"
-    //};
-
-    //        foreach (var header in headers)
-    //        {
-    //            var cell = new Cell()
-    //                .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
-    //                .SetPadding(8);
-    //            table.AddHeaderCell(cell);
-    //        }
-
-    //        // Данные таблицы
-    //        foreach (var exam in exams.OrderBy(e => e.DateEvent))
-    //        {
-    //            // Дата (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6));
-
-    //            // Группа (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.IdGroupNavigation?.NameOfGroup ?? ""))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6);
-
-    //            // Тип занятия
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.IdTypeOfLessonNavigation.TypeOfLesson1 ?? ""))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6);
-
-    //            // Дисциплина (по центру)
-    //            var disciplineText = $"{exam.IdDisciplineNavigation?.NameDiscipline ?? ""}";
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(disciplineText)
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6));
-
-    //            // Аудитория (по центру)
-    //            table.AddCell(new Cell()
-    //                .Add(new Paragraph(exam.IdAudienceNavigation?.NumberAudience?.ToString() ?? ""))
-    //                    .SetFont(fontNormal)
-    //                    .SetFontSize(9))
-    //                .SetTextAlignment(TextAlignment.CENTER)
-    //                .SetPadding(6);
-
-    //            // Преподаватели (по центру)
-    //            var teachers = exam.IdTeachers?.Any() == true ?
-    //                string.Join("\n", exam.IdTeachers.Select(t => t.FullName)) : "";
-    //            table.AddCell(new Cell()
-    //            .Add(new Paragraph(teachers)
-    //                .SetFont(fontNormal)
-    //                .SetFontSize(9))
-    //            .SetTextAlignment(TextAlignment.CENTER)
-    //            .SetPadding(6));
-    //        }
-
-    //        return table;
-    //    }
+        private bool ValidateSearchParameters()
+        {
+            if (string.IsNullOrEmpty(SelectedResult))
+            {
+                MessageBox.Show("Выберите тип экзамена", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        private string GetTypeOfExamName()
+        {
+            return SelectedResult switch
+            {
+                "Стандартный" => "Стандартный",
+                "По модулю" => "ПМ",
+                "Квалификационный" => "Квалификационный",
+                _ => SelectedResult
+            };
+        }
+        public void UpdateFilteredGroups()
+        {
+            FilteredGroups = SelectedDepartment == null
+                ? new ObservableCollection<GroupDto>(Groups)
+                : new ObservableCollection<GroupDto>(Groups.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
+
+            OnPropertyChanged(nameof(FilteredGroups));
+        }
+
+        private void ShowSearchResultMessage(int count)
+        {
+            var message = count > 0
+                ? $"Найдено {count} экзаменов"
+                : "Экзамены по заданным критериям не найдены";
+
+            ShowInfoMessage(message);
+        }
+
+        private void ShowInfoMessage(string message)
+        {
+            MessageBox.Show(message, "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async Task SaveToPdfAsync()
+        {
+            if (!ValidatePdfData()) return;
+
+            var filePath = GetSaveFilePath();
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResults, SelectedDepartment, SelectedResult);
+
+            if (success)
+            {
+                ShowSuccessMessage($"Файл успешно сохранен: {filePath}");
+                Logger.Info("PDF отчет успешно создан");
+            }
+            else
+            {
+                ShowErrorMessage("Ошибка при создании PDF файла");
+            }
+        }
+
+        private async Task LoadDbAsync()
+        {
+            try
+            {
+                Logger.Info("Загрузка данных для печати отчета");
+                
+                var filteredGroup = _apiService.GetGroupsAsync();
+                await Task.WhenAll(filteredGroup);
+                FilteredGroups = new ObservableCollection<GroupDto>(filteredGroup.Result);
+                
+                var (departments, groups, exams) = await LoadBasicDataAsync();
+                await ProcessLoadedDataAsync(departments, groups, exams);
+
+                Logger.Info("Данные для редактирования базы данных успешно загружены.");
+            }
+            catch (Exception ex)
+            {
+                HandleLoadError(ex);
+            }
+        }
 
         private void BackToPage(object parameter)
         {
-            SearchExamPage searchExamPage = new SearchExamPage();
+            var searchExamPage = new SearchExamPage();
             SearchExamWindow.pageManager.ChangePage(searchExamPage);
         }
 
-        //private async void LoadDb()
-        //{
-        //    try
-        //    {
-        //        Logger.Info("Загрузка таблиц из базы данных при открытии печати отчёта.");
-        //        using var context = new ApplicationDbContext();
-        //        var departments = await context.Departments.ToListAsync();
-        //        var groups = await context.Groups.ToListAsync();
-        //        var teachers = await context.Teachers.ToListAsync();
-        //        var audiences = await context.Audiences.ToListAsync();
+        private bool ValidatePdfData()
+        {
+            if (SearchResults == null || !SearchResults.Any())
+            {
+                ShowWarningMessage("Нет данных для сохранения в PDF");
+                return false;
+            }
 
-        //        context.ChangeTracker.Clear();
+            if (SelectedDepartment == null || SelectedResult == null)
+            {
+                ShowWarningMessage("Выберите отделение и тип отчета");
+                return false;
+            }
 
-        //        var disciplines = context.Disciplines.ToDictionary(d => d.IdDiscipline, d => d);
+            return true;
+        }
 
-        //        Department = new ObservableCollection<Department>(departments);
-        //        Group = new ObservableCollection<Group>(groups);
-        //        Teacher = new ObservableCollection<Teacher>(teachers);
-        //        Audience = new ObservableCollection<Audience>(audiences);
-        //        FilteredGroups = new ObservableCollection<Group>(groups);
-        //        var exams = context.Exams
-        //        .Include(e => e.IdGroupNavigation)
-        //        .ThenInclude(e => e.IdDepartmentNavigation)
-        //        .Include(e => e.IdTypeOfLessonNavigation)
-        //        .Include(e => e.IdTypeOfExamNavigation)
-        //        .Include(e => e.IdQualificationNavigation)
-        //        .Include(e => e.IdAudienceNavigation)
-        //        .Include(e => e.IdTeachers)
-        //        .AsNoTracking()
-        //        .ToList();
+        private string GetSaveFilePath()
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "PDF files (*.pdf)|*.pdf",
+                FileName = $"Расписание экзаменов {DateTime.Now:yyyy-MM-dd}",
+                DefaultExt = ".pdf"
+            };
 
-        //        foreach (var exam in exams)
-        //        {
-        //            if (disciplines.ContainsKey(exam.IdDiscipline))
-        //            {
-        //                exam.IdDisciplineNavigation = disciplines[exam.IdDiscipline];
-        //            }
-        //        }
+            return saveFileDialog.ShowDialog() == true ? saveFileDialog.FileName : null;
+        }
 
-        //        var groupedAndSortedResults = exams
-        //        .GroupBy(e => new
-        //        {
-        //            Department = e.IdGroupNavigation.IdDepartmentNavigation.NameOfDepartment,
-        //            Group = e.IdGroupNavigation.NameOfGroup
-        //        })
-        //        .OrderBy(g => g.Key.Department)
-        //        .ThenBy(g => g.Key.Group)
-        //        .SelectMany(g => g
-        //        .OrderBy(e => e.DateEvent)
-        //        .ThenBy(e => e.DateEvent.TimeOfDay)).ToList();
+        private async Task<(List<DepartmentDto>, List<GroupDto>, List<ExamDisplayDto>)> LoadBasicDataAsync()
+        {
+            var departmentsTask = _apiService.GetDepartmentsAsync();
+            var groupsTask = _apiService.GetGroupsAsync();
+            var examsTask = _apiService.GetExamsDisplayAsync();
 
-        //        SearchResults = new ObservableCollection<Exam>(groupedAndSortedResults);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Ошибка базы данных: {ex}", "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
-        //        Logger.Error($"Ошибка загрузки данных из базы данных {ex}");
-        //    }
-        //}
+            await Task.WhenAll(departmentsTask, groupsTask, examsTask);
 
+            return (departmentsTask.Result, groupsTask.Result, examsTask.Result);
+        }
 
-        //private void UpdateGroups()
-        //{
-        //    if (SelectedDepartment == null)
-        //    {
-        //        FilteredGroups = new ObservableCollection<Group>(Group);
-        //    }
-        //    else
-        //    {
-        //        var filtered = Group
-        //            .Where(g => g.IdDepartment == SelectedDepartment.IdDepartment)
-        //            .ToList();
+        private async Task ProcessLoadedDataAsync(List<DepartmentDto> departments, List<GroupDto> groups, List<ExamDisplayDto> exams)
+        {
+            foreach (var group in groups)
+            {
+                group.DepartmentName = departments.FirstOrDefault(d => d.IdDepartment == group.IdDepartment)?.NameOfDepartment ?? "Не указано";
+            }
 
-        //        FilteredGroups = new ObservableCollection<Group>(filtered);
-        //    }
-        //    SelectedGroup = null;
-        //}
+            Departments = new ObservableCollection<DepartmentDto>(departments);
+            Groups = new ObservableCollection<GroupDto>(groups);
+            SearchResults = new ObservableCollection<ExamDisplayDto>(exams);
 
+            NotifyCollectionsChanged();
+        }
+
+        private void DeleteSingleItem(object parameter)
+        {
+            if (parameter is ExamDisplayDto itemToRemove)
+            {
+                if (SearchResults.Contains(itemToRemove))
+                {
+                    SearchResults.Remove(itemToRemove);
+                    OnPropertyChanged(nameof(SearchResults));
+                    ShowInfoMessage("Строка удалена из отчёта");
+                }
+            }
+        }
+        private void NotifyCollectionsChanged()
+        {
+            OnPropertyChanged(nameof(Departments));
+            OnPropertyChanged(nameof(Groups));
+            OnPropertyChanged(nameof(SearchResults));
+        }
+
+        private void HandleLoadError(Exception ex)
+        {
+            ShowErrorMessage($"Ошибка загрузки данных: {ex.Message}");
+            Logger.Error($"Ошибка загрузки данных: {ex}");
+        }
+
+        private void ShowSuccessMessage(string message)
+        {
+            MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ShowErrorMessage(string message)
+        {
+            MessageBox.Show(message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void ShowWarningMessage(string message)
+        {
+            MessageBox.Show(message, "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
