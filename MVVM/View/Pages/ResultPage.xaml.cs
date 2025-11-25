@@ -15,13 +15,6 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
             InitializeComponent();
             DataContext = new PrintResultModel();
         }
-        private void GroupsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (DataContext is PrintResultModel viewModel)
-            {
-                viewModel.SelectedGroups = new ObservableCollection<GroupDto>(
-                    GroupsListBox.SelectedItems.Cast<GroupDto>());
-            }
-        }
+
     }
 }

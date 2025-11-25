@@ -145,7 +145,7 @@ namespace ZabgcExamsDesktop.MVVM.Model
         {
             var studyWorkEmployee = managers.FirstOrDefault(m => m.IdManager == 2);
             var ownerStudyDepartment = managers.FirstOrDefault(m => m.IdManager == 3);
-            var departmentOwner = departmentOwners.FirstOrDefault(d => d.DepartmentName == department.NameOfDepartment);
+            var departmentOwner = departmentOwners.FirstOrDefault(d => d.IdDepartment == department.IdDepartment);
 
             document.Add(new Paragraph("Согласовано:")
                 .SetFont(_fontBold)

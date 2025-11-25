@@ -35,8 +35,7 @@
         <ComboBox x:Name="DepartmentComboBox" Grid.Row="2" ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="NameOfDepartment" Height="Auto"/>
         <ListBox x:Name="GroupsListBox" 
          Grid.Row="2"
-         SelectionChanged="GroupsListBox_SelectionChanged"
-         SelectionMode="Single"
+         SelectionMode="Multiple"
          Grid.Column="1" 
          ItemsSource="{Binding FilteredGroups}"
          Height="Auto">
@@ -85,35 +84,35 @@
 
                 <DataGridTextColumn Header="Отделение" 
                            Binding="{Binding DepartmentName}" 
-                           Width="150"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Группа"
                            Binding="{Binding GroupName}" 
-                           Width="100"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Консультация/Экзамен" 
                            Binding="{Binding TypeOfLessonName}" 
-                           Width="150"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Тип экзамена" 
                            Binding="{Binding TypeOfExamName}" 
-                           Width="120"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Дисциплина" 
                            Binding="{Binding DisciplineName}" 
-                           Width="200"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Преподаватели" 
                            Binding="{Binding TeachersDisplay}" 
-                           Width="250"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Аудитория" 
                            Binding="{Binding AudienceNumber}" 
-                           Width="80"/>
+                           Width="Auto"/>
 
                 <DataGridTextColumn Header="Дата/время" 
                            Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}" 
-                           Width="120"/>
+                           Width="Auto"/>
 
                 <!-- Колонка действий -->
                 <DataGridTemplateColumn Header="Действия" Width="Auto">

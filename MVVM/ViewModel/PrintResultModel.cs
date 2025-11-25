@@ -42,9 +42,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ObservableCollection<GroupDto> Groups { get; set; } = new();
         public ObservableCollection<GroupDto> FilteredGroups { get; set; } = new();
         public string SelectedResult { get; set; }
-        
+
         private ObservableCollection<GroupDto> _selectedGroups = new();
-        private ObservableCollection<DepartmentDto> _selectedDepartment;
+        private DepartmentDto _selectedDepartment = new();
 
         public DepartmentDto SelectedDepartment
         {
@@ -53,7 +53,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 _selectedDepartment = value;
                 OnPropertyChanged();
-                UpdateFilteredGroups(); // Автоматически обновляем группы при изменении
+                UpdateFilteredGroups();
             }
         }
 
@@ -120,6 +120,16 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
+        private List<int> GetSelectedGroupIds()
+        {
+            if (FilteredGroups == null || !FilteredGroups.Any())
+            {
+                return new List<int>();
+            }
+            var selectedGroups = FilteredGroups.Where(g => g.IsSelected).ToList();
+            return selectedGroups.Select(g => g.IdGroup).ToList();
+        }
+
         private async Task SearchAsync()
         {
 
@@ -130,9 +140,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 var typeOfExamName = GetTypeOfExamName();
                 var departmentId = SelectedDepartment?.IdDepartment;
-                var groupIds = SelectedGroups?.Select(g => g.IdGroup).ToList();
-
-                var results = await SearchExamsAsync(typeOfExamName, departmentId, groupIds);
+                var selectedGroupIds = GetSelectedGroupIds();
+                var results = await SearchExamsAsync(typeOfExamName, departmentId, selectedGroupIds);
 
                 foreach (var item in results)
                 {
@@ -196,6 +205,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private async Task SaveToPdfAsync()
         {
+
             if (!ValidatePdfData()) return;
 
             var filePath = GetSaveFilePath();
@@ -219,11 +229,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             try
             {
                 Logger.Info("Загрузка данных для печати отчета");
-                
+
                 var filteredGroup = _apiService.GetGroupsAsync();
                 await Task.WhenAll(filteredGroup);
                 FilteredGroups = new ObservableCollection<GroupDto>(filteredGroup.Result);
-                
+
                 var (departments, groups, exams) = await LoadBasicDataAsync();
                 await ProcessLoadedDataAsync(departments, groups, exams);
 
