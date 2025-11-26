@@ -6,6 +6,7 @@ using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
 using System.Collections.ObjectModel;
+using System.IO;
 using ZabgcExamsDesktop.API;
 using ZabgcExamsDesktop.API.Models;
 
@@ -14,21 +15,17 @@ namespace ZabgcExamsDesktop.MVVM.Model
     public class PdfReportService
     {
         private readonly ApiService _apiService;
-        private PdfFont _fontNormal;
-        private PdfFont _fontBold;
-        private PdfFont _fontItalic;
+        private readonly string _fontNormalPath;
+        private readonly string _fontBoldPath;
+        private readonly string _fontItalicPath;
 
         public PdfReportService(ApiService apiService)
         {
             _apiService = apiService;
-            InitializeFonts();
-        }
-
-        private void InitializeFonts()
-        {
-            _fontNormal = PdfFontFactory.CreateFont(@"C:\Windows\Fonts\times.ttf", PdfEncodings.IDENTITY_H);
-            _fontBold = PdfFontFactory.CreateFont(@"C:\Windows\Fonts\timesbd.ttf", PdfEncodings.IDENTITY_H);
-            _fontItalic = PdfFontFactory.CreateFont(@"C:\Windows\Fonts\timesi.ttf", PdfEncodings.IDENTITY_H);
+            // Сохраняем только пути к шрифтам, а не сами шрифты
+            _fontNormalPath = @"C:\Windows\Fonts\times.ttf";
+            _fontBoldPath = @"C:\Windows\Fonts\timesbd.ttf";
+            _fontItalicPath = @"C:\Windows\Fonts\timesi.ttf";
         }
 
         public async Task<bool> GenerateReportAsync(string filePath, ObservableCollection<ExamDisplayDto> exams,
@@ -39,17 +36,29 @@ namespace ZabgcExamsDesktop.MVVM.Model
                 var managers = await _apiService.GetManagersAsync();
                 var departmentOwners = await _apiService.GetDepartmentOwnersAsync();
 
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    await Task.Delay(100);
+                }
+
                 using var writer = new PdfWriter(filePath);
                 using var pdf = new PdfDocument(writer);
                 using var document = new Document(pdf, PageSize.A4);
 
                 document.SetMargins(40, 40, 40, 40);
 
-                await AddApprovalSection(document, managers);
-                AddReportHeader(document, selectedDepartment, selectedResult);
-                await AddExamsTable(document, exams, selectedResult);
-                await AddAgreementSection(document, managers, departmentOwners, selectedDepartment);
+                // Создаем шрифты для КАЖДОГО документа
+                var fontNormal = PdfFontFactory.CreateFont(_fontNormalPath, PdfEncodings.IDENTITY_H);
+                var fontBold = PdfFontFactory.CreateFont(_fontBoldPath, PdfEncodings.IDENTITY_H);
+                var fontItalic = PdfFontFactory.CreateFont(_fontItalicPath, PdfEncodings.IDENTITY_H);
 
+                await AddApprovalSection(document, managers, fontNormal);
+                AddReportHeader(document, selectedDepartment, selectedResult, fontBold, fontItalic, fontNormal);
+                await AddExamsTable(document, exams, selectedResult, fontNormal, fontBold);
+                await AddAgreementSection(document, managers, departmentOwners, selectedDepartment, fontBold, fontNormal);
+
+                document.Close();
                 return true;
             }
             catch (Exception ex)
@@ -59,7 +68,7 @@ namespace ZabgcExamsDesktop.MVVM.Model
             }
         }
 
-        private async Task AddApprovalSection(Document document, List<ManagerDto> managers)
+        private async Task AddApprovalSection(Document document, List<ManagerDto> managers, PdfFont fontNormal)
         {
             var director = managers.FirstOrDefault(m => m.IdManager == 1);
 
@@ -80,7 +89,7 @@ namespace ZabgcExamsDesktop.MVVM.Model
             foreach (var line in approvalLines)
             {
                 approveTable.AddCell(new Cell()
-                    .Add(new Paragraph(line).SetFont(_fontNormal).SetFontSize(12))
+                    .Add(new Paragraph(line).SetFont(fontNormal).SetFontSize(12))
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
                     .SetPadding(2));
@@ -90,7 +99,8 @@ namespace ZabgcExamsDesktop.MVVM.Model
             document.Add(new Paragraph("\n"));
         }
 
-        private void AddReportHeader(Document document, DepartmentDto department, string reportType)
+        private void AddReportHeader(Document document, DepartmentDto department, string reportType,
+            PdfFont fontBold, PdfFont fontItalic, PdfFont fontNormal)
         {
             // Заголовок отчета
             var title = reportType switch
@@ -102,7 +112,7 @@ namespace ZabgcExamsDesktop.MVVM.Model
             };
 
             document.Add(new Paragraph(title)
-                .SetFont(_fontBold)
+                .SetFont(fontBold)
                 .SetFontSize(14)
                 .SetTextAlignment(TextAlignment.CENTER));
 
@@ -116,39 +126,41 @@ namespace ZabgcExamsDesktop.MVVM.Model
             };
 
             document.Add(new Paragraph(departmentName)
-                .SetFont(_fontItalic)
+                .SetFont(fontItalic)
                 .SetFontSize(12)
                 .SetTextAlignment(TextAlignment.CENTER));
 
             document.Add(new Paragraph("Таблица")
-                .SetFont(_fontNormal)
+                .SetFont(fontNormal)
                 .SetFontSize(12)
                 .SetTextAlignment(TextAlignment.RIGHT)
                 .SetMarginTop(5)
                 .SetMarginBottom(10));
         }
 
-        private async Task AddExamsTable(Document document, ObservableCollection<ExamDisplayDto> exams, string reportType)
+        private async Task AddExamsTable(Document document, ObservableCollection<ExamDisplayDto> exams, string reportType,
+            PdfFont fontNormal, PdfFont fontBold)
         {
             Table table = reportType switch
             {
-                "Стандартный" => CreateStandardExamsTable(exams),
-                "По модулю" or "Квалификационный" => CreateModuleExamsTable(exams),
-                _ => CreateStandardExamsTable(exams)
+                "Стандартный" => CreateStandardExamsTable(exams, fontNormal, fontBold),
+                "По модулю" or "Квалификационный" => CreateModuleExamsTable(exams, fontNormal, fontBold),
+                _ => CreateStandardExamsTable(exams, fontNormal, fontBold)
             };
 
             document.Add(table);
         }
 
         private async Task AddAgreementSection(Document document, List<ManagerDto> managers,
-            List<DepartmentOwnerDto> departmentOwners, DepartmentDto department)
+            List<DepartmentOwnerDto> departmentOwners, DepartmentDto department,
+            PdfFont fontBold, PdfFont fontNormal)
         {
             var studyWorkEmployee = managers.FirstOrDefault(m => m.IdManager == 2);
             var ownerStudyDepartment = managers.FirstOrDefault(m => m.IdManager == 3);
             var departmentOwner = departmentOwners.FirstOrDefault(d => d.IdDepartment == department.IdDepartment);
 
             document.Add(new Paragraph("Согласовано:")
-                .SetFont(_fontBold)
+                .SetFont(fontBold)
                 .SetFontSize(12)
                 .SetMarginTop(20));
 
@@ -166,13 +178,13 @@ namespace ZabgcExamsDesktop.MVVM.Model
                     .SetMarginTop(5);
 
                 lineTable.AddCell(new Cell()
-                    .Add(new Paragraph(item.Position).SetFont(_fontNormal))
+                    .Add(new Paragraph(item.Position).SetFont(fontNormal))
                     .SetTextAlignment(TextAlignment.LEFT)
                     .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
                     .SetPadding(0));
 
                 lineTable.AddCell(new Cell()
-                    .Add(new Paragraph(item.Name).SetFont(_fontNormal))
+                    .Add(new Paragraph(item.Name).SetFont(fontNormal))
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
                     .SetPadding(0));
@@ -181,68 +193,103 @@ namespace ZabgcExamsDesktop.MVVM.Model
             }
         }
 
-        private Table CreateStandardExamsTable(ObservableCollection<ExamDisplayDto> exams)
+        private Table CreateStandardExamsTable(ObservableCollection<ExamDisplayDto> exams, PdfFont fontNormal, PdfFont fontBold)
         {
             var table = new Table(new float[] { 2, 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
                 .SetMarginTop(10)
                 .SetMarginBottom(10);
 
-            AddTableHeaders(table, new[] { "Дата", "Группа", "Консультация/Экзамен", "Дисциплина, МДК", "Аудитория", "Члены ЭК" });
-            AddTableData(table, exams, includeLessonType: true);
+            AddTableHeaders(table, new[] { "Дата", "Группа", "Консультация/Экзамен", "Дисциплина, МДК", "Аудитория", "Члены ЭК" }, fontBold);
+            AddTableData(table, exams, includeLessonType: true, fontNormal);
 
             return table;
         }
 
-        private Table CreateModuleExamsTable(ObservableCollection<ExamDisplayDto> exams)
+        private Table CreateModuleExamsTable(ObservableCollection<ExamDisplayDto> exams, PdfFont fontNormal, PdfFont fontBold)
         {
             var table = new Table(new float[] { 2, 2, 3, 2, 3 })
                 .SetWidth(UnitValue.CreatePercentValue(100))
                 .SetMarginTop(10)
                 .SetMarginBottom(10);
 
-            AddTableHeaders(table, new[] { "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК" });
-            AddTableData(table, exams, includeLessonType: false);
+            AddTableHeaders(table, new[] { "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК" }, fontBold);
+            AddTableData(table, exams, includeLessonType: false, fontNormal);
 
             return table;
         }
 
-        private void AddTableHeaders(Table table, string[] headers)
+        private void AddTableHeaders(Table table, string[] headers, PdfFont fontBold)
         {
             foreach (var header in headers)
             {
                 table.AddHeaderCell(new Cell()
-                    .Add(new Paragraph(header).SetFont(_fontBold).SetFontSize(10))
+                    .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
                     .SetPadding(8));
             }
         }
 
-        private void AddTableData(Table table, ObservableCollection<ExamDisplayDto> exams, bool includeLessonType)
+        private void AddTableData(Table table, ObservableCollection<ExamDisplayDto> exams, bool includeLessonType, PdfFont fontNormal)
         {
-            foreach (var exam in exams.OrderBy(e => e.DateEvent))
+            var groupedExams = exams
+                .GroupBy(e => e.GroupName)
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            foreach (var group in groupedExams)
             {
-                AddTableCell(table, exam.DateEvent.ToString("dd.MM.yyyy HH:mm"));
-                AddTableCell(table, exam.GroupName);
+                var sortedExams = group.OrderBy(e => e.DateEvent).ToList();
 
-                if (includeLessonType)
+                foreach (var exam in sortedExams)
                 {
-                    AddTableCell(table, exam.TypeOfLessonName);
-                }
+                    AddTableCell(table, exam.DateEvent.ToString("dd.MM.yyyy HH:mm"), fontNormal);
+                    AddTableCell(table, exam.GroupName, fontNormal);
 
-                AddTableCell(table, exam.DisciplineName);
-                AddTableCell(table, exam.AudienceNumber);
-                AddTableCell(table, exam.TeachersDisplay);
+                    if (includeLessonType)
+                    {
+                        AddTableCell(table, exam.TypeOfLessonName, fontNormal);
+                    }
+
+                    AddTableCell(table, exam.DisciplineName, fontNormal);
+                    AddTableCell(table, exam.AudienceNumber, fontNormal);
+                    AddTableCell(table, exam.TeachersDisplay, fontNormal, isTeachersCell: true);
+                }
             }
         }
 
-        private void AddTableCell(Table table, string text)
+        private void AddTableCell(Table table, string text, PdfFont fontNormal, bool isTeachersCell = false)
         {
-            table.AddCell(new Cell()
-                .Add(new Paragraph(text).SetFont(_fontNormal).SetFontSize(9))
+            var cell = new Cell()
                 .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(6));
+                .SetPadding(6);
+
+            if (isTeachersCell && !string.IsNullOrEmpty(text))
+            {
+                var teachers = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                  .Select(t => t.Trim())
+                                  .Where(t => !string.IsNullOrEmpty(t))
+                                  .ToList();
+
+                var paragraph = new Paragraph();
+                for (int i = 0; i < teachers.Count; i++)
+                {
+                    paragraph.Add(teachers[i]);
+                    if (i < teachers.Count - 1)
+                    {
+                        paragraph.Add(new Text("\n"));
+                    }
+                }
+                paragraph.SetFont(fontNormal).SetFontSize(9);
+                cell.Add(paragraph);
+            }
+            else
+            {
+                cell.Add(new Paragraph(text).SetFont(fontNormal).SetFontSize(9));
+            }
+
+            table.AddCell(cell);
         }
 
         private string GetDepartmentOwnerPosition(string departmentName)
