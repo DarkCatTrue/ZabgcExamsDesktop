@@ -1,18 +1,23 @@
-﻿using System.Net.Http;
+﻿using Newtonsoft.Json;
+using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ZabgcExamsDesktop.API
 {
     public class ApiService
     {
         private readonly HttpClient _httpClient;
-        private const string BaseUrl = "https://localhost:7182/api/";
 
         public ApiService()
         {
+            string BaseUrl = LoadConfiguration();
+
             _httpClient = new HttpClient();
             var handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
@@ -22,6 +27,23 @@ namespace ZabgcExamsDesktop.API
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        public string LoadConfiguration()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string projectRoot = Directory.GetParent(baseDir).Parent.Parent.Parent.FullName;
+            string configPath = Path.Combine(projectRoot, "configuration.json");
+
+            if (File.Exists(configPath))
+            {
+                string jsonFile = File.ReadAllText(configPath);
+                dynamic jsonResult = JsonConvert.DeserializeObject(jsonFile);
+                string BaseUrl = jsonResult.ApiString;
+                return BaseUrl;
+            }
+
+            throw new FileNotFoundException($"Configuration file not found: {configPath}");
         }
 
         public async Task<bool> CreateExamAsync(CreateExamDto exam)

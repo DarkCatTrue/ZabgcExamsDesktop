@@ -14,13 +14,7 @@ namespace ZabgcExamsDesktop
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            JsonHandler jsonHandler = new JsonHandler();
-            jsonHandler.CreateLogsFolder();
-
             Logger.Info("==== Приложение запущено ====");
-
-            jsonHandler.CheckFile();
-
             base.OnStartup(e);
         }
 

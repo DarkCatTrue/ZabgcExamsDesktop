@@ -3,6 +3,6 @@
     public class AudienceDto : BaseDto
     {
         public int IdAudience { get; set; }
-        public int? NumberAudience { get; set; } = null;
+        public string? NumberAudience { get; set; } = null;
     }
 }

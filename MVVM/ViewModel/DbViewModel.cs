@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.DirectoryServices;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -346,23 +347,24 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 if (DepartmentsVisibility == Visibility.Visible)
                 {
-                    await SaveAllNewItems(Departments, "кафедр");
+                    await SaveAllItems(Departments, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync, "отделений");
                 }
                 else if (GroupsVisibility == Visibility.Visible)
                 {
-                    await SaveAllNewItems(Groups, "групп");
+                    await SaveAllItems(Groups, _apiService.CreateGroupAsync, _apiService.UpdateGroupAsync, "групп");
                 }
                 else if (TeachersVisibility == Visibility.Visible)
                 {
-                    await SaveAllNewItems(Teachers, "преподавателей");
+                    await SaveAllItems(Teachers, _apiService.CreateTeacherAsync, _apiService.UpdateTeacherAsync, "преподавателей");
                 }
                 else if (AudiencesVisibility == Visibility.Visible)
                 {
-                    await SaveAllNewItems(Audiences, "аудиторий");
+                    await SaveAllItems(Audiences, _apiService.CreateAudienceAsync, _apiService.UpdateAudienceAsync, "аудиторий");
                 }
                 else if (DisciplinesVisibility == Visibility.Visible)
                 {
-                    await SaveAllNewItems(Disciplines, "дисциплин");
+                    await SaveAllItems(Disciplines, _apiService.CreateDisciplineAsync, _apiService.UpdateDisciplineAsync, "дисциплин");
+
                 }
             }
             catch (Exception ex)
@@ -371,97 +373,51 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        private async Task SaveAllNewItems<T>(ObservableCollection<T> collection, string entityName) where T : BaseDto
+
+        private async Task SaveAllItems<T>(ObservableCollection<T> collection,
+        Func<T, Task<bool>> createFunc,
+        Func<T, Task<bool>> updateFunc,
+        string entityName) where T : BaseDto
         {
-            var newItems = collection.Where(x => x.IsNew).ToList();
+            var itemsToSave = new List<T>();
 
-            if (!newItems.Any())
+            foreach (var item in collection)
             {
-                MessageBox.Show($"Нет новых {entityName} для сохранения");
+                itemsToSave.Add(item);
+            }
+
+            if (!itemsToSave.Any())
+            {
+                MessageBox.Show("Нет элементов для сохранения");
                 return;
             }
 
-            var invalidItems = newItems.Where(item => !IsItemValid(item)).ToList();
-            if (invalidItems.Any())
-            {
-                MessageBox.Show($"Заполните все обязательные поля для новых {entityName}");
-                return;
-            }
-
-            int successCount = 0;
-            int errorCount = 0;
-
-            foreach (var item in newItems)
+            foreach (var item in itemsToSave)
             {
                 try
                 {
-                    bool success = await SaveSingleItem(item);
+                    bool success;
 
-                    if (success)
+                    if (item.IsNew)
                     {
-                        successCount++;
-                        item.IsNew = false;
-                        item.IsEditing = false;
+                        success = await createFunc(item);
                     }
                     else
                     {
-                        errorCount++;
+                        success = await updateFunc((T)SelectedItem);
+                    }
+                    if (success) 
+                    {
+                        item.IsEditing = false;
+                        item.IsNew = false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    errorCount++;
-                    Console.WriteLine($"Ошибка сохранения {entityName}: {ex.Message}");
+                    MessageBox.Show($"Ошибка сохранения: {ex}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-
-            await LoadData();
-
-            string message = $"Сохранено {successCount} из {newItems.Count} {entityName}";
-            if (errorCount > 0)
-            {
-                message += $"\nНе удалось сохранить {errorCount} {entityName}";
-            }
-            MessageBox.Show(message, "Результат сохранения");
-        }
-
-        private bool IsItemValid<T>(T item) where T : BaseDto
-        {
-            return item switch
-            {
-                DepartmentDto department => !string.IsNullOrWhiteSpace(department.NameOfDepartment),
-                GroupDto group => !string.IsNullOrWhiteSpace(group.NameOfGroup) && group.IdDepartment > 0,
-                TeacherDto teacher => !string.IsNullOrWhiteSpace(teacher.FullName),
-                AudienceDto audience => !string.IsNullOrWhiteSpace(audience.NumberAudience.ToString()),
-                DisciplineDto discipline => !string.IsNullOrWhiteSpace(discipline.NameDiscipline),
-                _ => false
-            };
-        }
-
-        private async Task<bool> SaveSingleItem<T>(T item) where T : BaseDto
-        {
-            return item switch
-            {
-                DepartmentDto department => await _apiService.CreateDepartmentAsync(new DepartmentDto
-                { NameOfDepartment = department.NameOfDepartment.Trim() }),
-
-                GroupDto group => await _apiService.CreateGroupAsync(new GroupDto
-                {
-                    NameOfGroup = group.NameOfGroup.Trim(),
-                    IdDepartment = group.IdDepartment
-                }),
-
-                TeacherDto teacher => await _apiService.CreateTeacherAsync(new TeacherDto
-                { FullName = teacher.FullName.Trim() }),
-
-                AudienceDto audience => await _apiService.CreateAudienceAsync(new AudienceDto
-                { NumberAudience = audience.NumberAudience }),
-
-                DisciplineDto discipline => await _apiService.CreateDisciplineAsync(new DisciplineDto
-                { NameDiscipline = discipline.NameDiscipline.Trim() }),
-
-                _ => false
-            };
+            MessageBox.Show("Изменения успешно сохранены!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void AddGroup()
