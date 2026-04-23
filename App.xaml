@@ -29,6 +29,17 @@
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
+
+            <Style x:Key="DeleteButtonStyle" TargetType="Button">
+                <Setter Property="Content" Value="🗑️ Удалить"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="Padding" Value="5,2"/>
+                <Setter Property="Background" Value="#FFf44336"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Command"
+            Value="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                <Setter Property="CommandParameter" Value="{Binding}"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

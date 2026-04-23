@@ -1,7 +1,6 @@
 ﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.DirectoryServices;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using ZabgcExamsDesktop.API;

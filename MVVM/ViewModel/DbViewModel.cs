@@ -1,21 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
-using NLog;
+﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.DirectoryServices;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Navigation;
 using ZabgcExamsDesktop.API;
 using ZabgcExamsDesktop.API.Models;
-using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
+using static ZabgcExamsDesktop.MVVM.View.Pages.DataGridColumnsBehavior;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
@@ -33,20 +27,29 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private ObservableCollection<DisciplineDto> _disciplines;
         private ObservableCollection<ManagerDto> _managers;
         private ObservableCollection<DepartmentOwnerDto> _departmentOwners;
-        
+
         private object _selectedItem;
         private string _enterGroup;
         private bool _isEditing = false;
 
+        private object _currentItems;
+        public object CurrentItems
+        {
+            get => _currentItems;
+            set { _currentItems = value; OnPropertyChanged(); }
+        }
 
-
-        private Visibility _departmentsVisbility = Visibility.Collapsed;
-        private Visibility _groupsVisibility = Visibility.Visible;
-        private Visibility _audiencesVisibility = Visibility.Collapsed;
-        private Visibility _teachersVisibility = Visibility.Collapsed;
-        private Visibility _disciplinesVisibility = Visibility.Collapsed;
-        private Visibility _managersVisibility = Visibility.Collapsed;
-        private Visibility _departmentOwnersVisibility = Visibility.Collapsed;
+        private ViewType _currentViewType;
+        public ViewType CurrentViewType
+        {
+            get => _currentViewType;
+            set
+            {
+                _currentViewType = value;
+                OnPropertyChanged();
+                UpdateItems();
+            }
+        }
 
 
         public ICommand LoadTableCommand { get; }
@@ -57,7 +60,20 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ICommand AddCommand { get; }
         public ICommand AddNewGroupCommand { get; }
 
-
+        private void UpdateItems()
+        {
+            CurrentItems = CurrentViewType switch
+            {
+                ViewType.Departments => Departments,
+                ViewType.Groups => Groups,
+                ViewType.Audiences => Audiences,
+                ViewType.Teachers => Teachers,
+                ViewType.Disciplines => Disciplines,
+                ViewType.Managers => Managers,
+                ViewType.DepartmentOwners => DepartmentOwners,
+                _ => null
+            };
+        }
         public object SelectedItem
         {
             get => _selectedItem;
@@ -236,136 +252,70 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         }
         public bool IsNotEditing => !IsEditing;
 
-
-        public Visibility DepartmentsVisibility
-        {
-            get => _departmentsVisbility;
-            set
-            {
-                _departmentsVisbility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility GroupsVisibility
-        {
-            get => _groupsVisibility;
-            set
-            {
-                _groupsVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility DisciplinesVisibility
-        {
-            get => _disciplinesVisibility;
-            set
-            {
-                _disciplinesVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility AudiencesVisibility
-        {
-            get => _audiencesVisibility;
-            set
-            {
-                _audiencesVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility TeachersVisibility
-        {
-            get => _teachersVisibility;
-            set
-            {
-                _teachersVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility DepartmentOwnersVisibility
-        {
-            get => _departmentOwnersVisibility;
-            set
-            {
-                _departmentOwnersVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public Visibility ManagersVisibility
-        {
-            get => _managersVisibility;
-            set
-            {
-                _managersVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-
         private void AddNewItem(object parameter)
         {
             IsEditing = true;
 
-            if (DepartmentsVisibility == Visibility.Visible)
+            switch (CurrentViewType)
             {
-                var newItem = new DepartmentDto { IsNew = true, IsEditing = true };
-                Departments.Add(newItem);
-                SelectedItem = newItem;
+                case ViewType.Departments:
+                    AddItem(Departments, new DepartmentDto());
+                    break;
+
+                case ViewType.Groups:
+                    AddGroup();
+                    break;
+
+                case ViewType.Teachers:
+                    AddItem(Teachers, new TeacherDto());
+                    break;
+
+                case ViewType.Audiences:
+                    AddItem(Audiences, new AudienceDto());
+                    break;
+
+                case ViewType.Disciplines:
+                    AddItem(Disciplines, new DisciplineDto());
+                    break;
             }
-            else if (GroupsVisibility == Visibility.Visible)
-            {
-                AddGroup();
-            }
-            else if (TeachersVisibility == Visibility.Visible)
-            {
-                var newItem = new TeacherDto { IsNew = true, IsEditing = true };
-                Teachers.Add(newItem);
-                SelectedItem = newItem;
-            }
-            else if (AudiencesVisibility == Visibility.Visible)
-            {
-                var newItem = new AudienceDto { IsNew = true, IsEditing = true };
-                Audiences.Add(newItem);
-                SelectedItem = newItem;
-            }
-            else if (DisciplinesVisibility == Visibility.Visible)
-            {
-                var newItem = new DisciplineDto { IsNew = true, IsEditing = true };
-                Disciplines.Add(newItem);
-                SelectedItem = newItem;
-            }
+        }
+        private void AddItem<T>(ObservableCollection<T> collection, T item) where T : BaseDto
+        {
+            item.IsNew = true;
+            item.IsEditing = true;
+
+            collection.Add(item);
+            SelectedItem = item;
         }
 
         private async void SaveItem(object parameter)
         {
             try
             {
-                if (DepartmentsVisibility == Visibility.Visible)
+                switch (CurrentViewType)
                 {
-                    await SaveAllItems(Departments, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync, "отделений");
-                }
-                else if (GroupsVisibility == Visibility.Visible)
-                {
-                    await SaveAllItems(Groups, _apiService.CreateGroupAsync, _apiService.UpdateGroupAsync, "групп");
-                }
-                else if (TeachersVisibility == Visibility.Visible)
-                {
-                    await SaveAllItems(Teachers, _apiService.CreateTeacherAsync, _apiService.UpdateTeacherAsync, "преподавателей");
-                }
-                else if (AudiencesVisibility == Visibility.Visible)
-                {
-                    await SaveAllItems(Audiences, _apiService.CreateAudienceAsync, _apiService.UpdateAudienceAsync, "аудиторий");
-                }
-                else if (DisciplinesVisibility == Visibility.Visible)
-                {
-                    await SaveAllItems(Disciplines, _apiService.CreateDisciplineAsync, _apiService.UpdateDisciplineAsync, "дисциплин");
+                    case ViewType.Departments:
+                        await SaveAllItems(Departments, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync);
+                        break;
 
+                    case ViewType.Groups:
+                        await SaveAllItems(Groups, _apiService.CreateGroupAsync, _apiService.UpdateGroupAsync);
+                        break;
+
+                    case ViewType.Teachers:
+                        await SaveAllItems(Teachers, _apiService.CreateTeacherAsync, _apiService.UpdateTeacherAsync);
+                        break;
+
+                    case ViewType.Audiences:
+                        await SaveAllItems(Audiences, _apiService.CreateAudienceAsync, _apiService.UpdateAudienceAsync);
+                        break;
+
+                    case ViewType.Disciplines:
+                        await SaveAllItems(Disciplines, _apiService.CreateDisciplineAsync, _apiService.UpdateDisciplineAsync);
+                        break;
                 }
+
+                MessageBox.Show("Изменения успешно сохранены!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -374,39 +324,30 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         }
 
 
-        private async Task SaveAllItems<T>(ObservableCollection<T> collection,
-        Func<T, Task<bool>> createFunc,
-        Func<T, Task<bool>> updateFunc,
-        string entityName) where T : BaseDto
+        private async Task SaveAllItems<T>(
+         ObservableCollection<T> collection,
+         Func<T, Task<bool>> createFunc,
+         Func<T, Task<bool>> updateFunc)
+         where T : BaseDto
         {
-            var itemsToSave = new List<T>();
-
-            foreach (var item in collection)
-            {
-                itemsToSave.Add(item);
-            }
-
-            if (!itemsToSave.Any())
+            if (!collection.Any())
             {
                 MessageBox.Show("Нет элементов для сохранения");
                 return;
             }
 
-            foreach (var item in itemsToSave)
+            foreach (var item in collection)
             {
                 try
                 {
                     bool success;
 
                     if (item.IsNew)
-                    {
                         success = await createFunc(item);
-                    }
                     else
-                    {
-                        success = await updateFunc((T)SelectedItem);
-                    }
-                    if (success) 
+                        success = await updateFunc(item);
+
+                    if (success)
                     {
                         item.IsEditing = false;
                         item.IsNew = false;
@@ -414,10 +355,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка сохранения: {ex}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Ошибка сохранения: {ex.Message}");
                 }
             }
-            MessageBox.Show("Изменения успешно сохранены!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void AddGroup()
@@ -447,53 +387,50 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 try
                 {
                     bool success = false;
-                    string entityName = "";
-                    string itemName = "";
 
-                    if (parameter is DepartmentDto department)
+                    switch (parameter)
                     {
-                        success = await _apiService.DeleteDepartmentAsync(department.IdDepartment);
-                        entityName = "кафедру";
-                        itemName = department.NameOfDepartment;
-                        Logger.Warn($"Кафедра '{itemName}' была удалена из базы данных.");
-                    }
-                    else if (parameter is GroupDto group)
-                    {
-                        success = await _apiService.DeleteGroupAsync(group.IdGroup);
-                        entityName = "группу";
-                        itemName = group.NameOfGroup;
-                        Logger.Warn($"Группа '{itemName}' была удалена из базы данных.");
-                    }
-                    else if (parameter is AudienceDto audience)
-                    {
-                        success = await _apiService.DeleteAudienceAsync(audience.IdAudience);
-                        entityName = "аудиторию";
-                        itemName = audience.NumberAudience.ToString();
-                        Logger.Warn($"Аудитория '{itemName}' была удалена из базы данных.");
-                    }
-                    else if (parameter is TeacherDto teacher)
-                    {
-                        success = await _apiService.DeleteTeacherAsync(teacher.IdTeacher);
-                        entityName = "преподавателя";
-                        itemName = teacher.FullName;
-                        Logger.Warn($"Преподаватель '{itemName}' была удален из базы данных.");
-                    }
-                    else if (parameter is DisciplineDto discipline)
-                    {
-                        success = await _apiService.DeleteDisciplineAsync(discipline.IdDiscipline);
-                        entityName = "дисциплину";
-                        itemName = discipline.NameDiscipline;
-                        Logger.Warn($"Дисциплина '{itemName}' была удалена из базы данных.");
+                        case DepartmentDto d:
+                            Departments.Remove(d);
+
+                            success = await _apiService.DeleteDepartmentAsync(d.IdDepartment);
+                            Logger.Warn($"Отделение '{d.NameOfDepartment}' было удалено из базы данных.");
+                            break;
+
+                        case GroupDto g:
+                            Groups.Remove(g);
+                            success = await _apiService.DeleteGroupAsync(g.IdGroup);
+                            Logger.Warn($"Группа '{g.IdGroup}' была удалена из базы данных.");
+                            break;
+
+                        case AudienceDto a:
+                            Audiences.Remove(a);
+                            success = await _apiService.DeleteAudienceAsync(a.IdAudience);
+                            Logger.Warn($"Аудитория '{a.IdAudience}' была удалена из базы данных.");
+                            break;
+
+                        case TeacherDto t:
+                            Teachers.Remove(t);
+                            success = await _apiService.DeleteTeacherAsync(t.IdTeacher);
+                            Logger.Warn($"Преподаватель '{t.IdTeacher}' был удален из базы данных.");
+                            break;
+
+                        case DisciplineDto d:
+                            Disciplines.Remove(d);
+
+                            success = await _apiService.DeleteDisciplineAsync(d.IdDiscipline);
+                            Logger.Warn($"Дисциплина '{d.IdDiscipline}' была удалена из базы данных.");
+                            break;
                     }
 
                     if (success)
                     {
                         await LoadData();
-                        MessageBox.Show($"{entityName} '{itemName}' удалена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"Запись успешно удалена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox.Show($"Не удалось удалить {entityName}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Не удалось удалить запись.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 catch (Exception ex)
@@ -524,7 +461,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 var disciplines = _apiService.GetDisciplinesAsync();
                 var managers = _apiService.GetManagersAsync();
                 var departmentOwnersTask = _apiService.GetDepartmentOwnersAsync();
-                
+
                 await Task.WhenAll(departmentsTask, groupsTask, teachers, audiences, managers, typeOfExams, disciplines, departmentOwnersTask);
 
                 var departments = departmentsTask.Result;
@@ -551,6 +488,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 Managers = new ObservableCollection<ManagerDto>(managers.Result);
                 DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners);
                 Logger.Info("Данные для редактирования базы данных успешно загружены.");
+                ShowGrid("Groups");
             }
             catch (Exception ex)
             {
@@ -560,48 +498,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private void ShowGrid(object parameter)
         {
-            if (parameter is string gridName)
+            if (parameter is string gridName &&
+                Enum.TryParse<ViewType>(gridName, out var viewType))
             {
+                CurrentViewType = viewType;
 
-                GroupsVisibility = Visibility.Collapsed;
-                DepartmentsVisibility = Visibility.Collapsed;
-                AudiencesVisibility = Visibility.Collapsed;
-                TeachersVisibility = Visibility.Collapsed;
-                DisciplinesVisibility = Visibility.Collapsed;
-                DepartmentOwnersVisibility = Visibility.Collapsed;
-                ManagersVisibility = Visibility.Collapsed;
-                switch (gridName)
-                {
-                    case "Groups":
-                        GroupsVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица групп");
-                        break;
-                    case "Departments":
-                        DepartmentsVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица отделений");
-                        break;
-                    case "Audiences":
-                        AudiencesVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица аудиторий");
-                        break;
-                    case "Teachers":
-                        TeachersVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица преподавателей");
-                        break;
-                    case "Disciplines":
-                        DisciplinesVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица дисциплин");
-                        break;
-                    case "Managers":
-                        ManagersVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица менеджеров");
-                        break;
-                    case "DepartmentOwners":
-                        DepartmentOwnersVisibility = Visibility.Visible;
-                        Logger.Info("Была открыта таблица зав.Отделений");
-                        break;
-                }
-
+                Logger.Info($"Открыта таблица: {viewType}");
             }
         }
 
