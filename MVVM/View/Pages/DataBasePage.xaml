@@ -13,7 +13,6 @@
             <RowDefinition Height="60"/>
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
-            <RowDefinition Height="35"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
@@ -39,7 +38,7 @@
             <Button Name="TypeOfExamsBtn" Content="Зав. Отделениями" Command="{Binding LoadTableCommand}" CommandParameter="DepartmentOwners"/>
         </UniformGrid>
 
-        <UniformGrid Grid.ColumnSpan="7" Grid.Row="5" Rows="1">
+        <UniformGrid Grid.ColumnSpan="7" Grid.Row="4" Rows="1">
 
             <Button Content="➕" 
             Command="{Binding AddCommand}"
@@ -60,20 +59,15 @@
             Foreground="White"
             ToolTip="Сохранить изменения"/>
 
-
-
         </UniformGrid>
 
         <DataGrid 
+          Style="{StaticResource DbDataGridStyle}"
           Grid.Row="3"
-          Grid.RowSpan="2"
           Grid.ColumnSpan="7"
           ItemsSource="{Binding CurrentItems}"
           SelectedItem="{Binding SelectedItem}"
-          CanUserAddRows="False"
           IsReadOnly="{Binding IsNotEditing}"
-          SelectionMode="Single"
-          AutoGenerateColumns="False"
           local:DataGridColumnsBehavior.ViewType="{Binding CurrentViewType}">
             <DataGrid.Resources>
                 <DataTemplate x:Key="DeleteButtonTemplate">

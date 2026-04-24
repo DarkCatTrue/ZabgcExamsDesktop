@@ -258,10 +258,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
             switch (CurrentViewType)
             {
-                case ViewType.Departments:
-                    AddItem(Departments, new DepartmentDto());
-                    break;
-
                 case ViewType.Groups:
                     AddGroup();
                     break;
@@ -294,6 +290,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 switch (CurrentViewType)
                 {
+                    case ViewType.Managers:
+                        await SaveAllItems(Managers, _apiService.CreateManagerAsync, _apiService.UpdateManagerAsync); 
+                        break;
+                    
+                    case ViewType.DepartmentOwners:
+                        await SaveAllItems(DepartmentOwners, _apiService.CreateDepartmentOwnerAsync, _apiService.UpdateDepartmentOwnerAsync); 
+                        break;
+
                     case ViewType.Departments:
                         await SaveAllItems(Departments, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync);
                         break;
@@ -319,7 +323,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка сохранения: {ex.Message}");
+                MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -390,13 +394,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                     switch (parameter)
                     {
-                        case DepartmentDto d:
-                            Departments.Remove(d);
-
-                            success = await _apiService.DeleteDepartmentAsync(d.IdDepartment);
-                            Logger.Warn($"Отделение '{d.NameOfDepartment}' было удалено из базы данных.");
-                            break;
-
                         case GroupDto g:
                             Groups.Remove(g);
                             success = await _apiService.DeleteGroupAsync(g.IdGroup);
@@ -417,7 +414,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                         case DisciplineDto d:
                             Disciplines.Remove(d);
-
                             success = await _apiService.DeleteDisciplineAsync(d.IdDiscipline);
                             Logger.Warn($"Дисциплина '{d.IdDiscipline}' была удалена из базы данных.");
                             break;
@@ -488,7 +484,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 Managers = new ObservableCollection<ManagerDto>(managers.Result);
                 DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners);
                 Logger.Info("Данные для редактирования базы данных успешно загружены.");
-                ShowGrid("Groups");
             }
             catch (Exception ex)
             {

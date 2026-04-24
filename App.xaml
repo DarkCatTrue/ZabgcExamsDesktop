@@ -4,7 +4,7 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:local="clr-namespace:ZabgcExamsDesktop" xmlns:model="clr-namespace:ZabgcExamsDesktop.MVVM.Model"
              StartupUri="/MVVM/View/Windows/SearchExamWindow.xaml">
-   
+
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -30,16 +30,32 @@
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
-            <Style x:Key="DeleteButtonStyle" TargetType="Button">
-                <Setter Property="Content" Value="🗑️ Удалить"/>
-                <Setter Property="Margin" Value="2"/>
-                <Setter Property="Padding" Value="5,2"/>
+
+            <Style x:Key="GridTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource MaterialDesignBody1TextBlock}"/>
+
+            <Style x:Key="GridTextBoxStyle"
+       TargetType="TextBox"
+       BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+
+                <Setter Property="Padding" Value="5"/>
+            </Style>
+
+            <Style x:Key="DbDataGridStyle" TargetType="DataGrid" BasedOn="{StaticResource MaterialDesignDataGrid}">
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignPaperButton}">
+                <Setter Property="Content" Value="Удалить 🗑️"/>
                 <Setter Property="Background" Value="#FFf44336"/>
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="Command"
             Value="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                 <Setter Property="CommandParameter" Value="{Binding}"/>
             </Style>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>
