@@ -3,14 +3,18 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Input;
 using ZabgcExamsDesktop.API;
 using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.View.Windows;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class AddExamModel : INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        TeachersAddWindow window;
 
         private readonly ApiService _apiService;
 
@@ -71,10 +75,34 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             get => _selectedTypeOfExam; set { _selectedTypeOfExam = value; OnPropertyChanged(); }
         }
 
+        public ICommand OpenTeachersWindow { get; }
+        public ICommand AddNewTeacherCommand { get; set; }
+
+        public ICommand DeleteTeacherCommand { get; set; }
+
+        public ICommand SaveNewTeachersCommand { get; set; }
+
         public AddExamModel()
         {
             _apiService = new ApiService();
+            OpenTeachersWindow = new RelayCommand(OpenTeachers);
             LoadAllDataAsync();
+        }
+
+
+        private void OpenTeachers(object parameter)
+        {
+            if (window == null || window.IsLoaded)
+            {
+                window = new TeachersAddWindow();
+                window.Closed += (s, args) => window = null;
+                window.Show();
+            }
+            else
+            {
+                window.Activate();
+                window.Focus();
+            }
         }
 
         public async Task LoadAllDataAsync()

@@ -1,0 +1,47 @@
+﻿<Window x:Class="ZabgcExamsDesktop.MVVM.View.Windows.TeachersAddWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Windows"
+        mc:Ignorable="d"
+            Title="Добавление членов ЭК" Height="310" Width="580"
+    Background="#323a47"
+    ResizeMode="CanMinimize"
+    WindowStartupLocation="CenterScreen" 
+    WindowStyle="None"
+    >
+    <Grid MouseDown="ToolBar_MouseDown">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="100"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="130"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="1" Text="Доступные преподаватели" Foreground="White" TextAlignment="Center"/>
+        <ListBox Grid.Row="2" Grid.RowSpan="2"  ItemsSource="{Binding Teacher}" VerticalAlignment="Top" SelectedItem="{Binding SelectedAvailableTeacher}" DisplayMemberPath="FullName"/>
+
+        <TextBlock Grid.Row="1" Grid.Column="2" Text="Выбранные преподаватели" Foreground="White" TextAlignment="Center"/>
+        <ListBox Grid.Row="2" Grid.RowSpan="2" Grid.Column="2" ScrollViewer.VerticalScrollBarVisibility="Visible" ItemsSource="{Binding SelectedTeachers}" SelectedItem="{Binding SelectedTeacherRemove}" DisplayMemberPath="FullName"/>
+
+        <StackPanel Grid.Column="1" Grid.Row="2"  VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Button Content="Добавить" Command="{Binding AddNewTeacherCommand}"/>
+            <Button Content="Удалить" Margin="0 10 0 0" Command="{Binding DeleteTeacherCommand}"/>
+        </StackPanel>
+
+        <Button Grid.Row="3" Width="115" Grid.Column="1" Content="Сохранить" Command="{Binding SaveNewTeachersCommand}"/>
+
+        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <Image x:Name="colapseBtn" Source="/Icons/Знак_свернуть.png" Panel.ZIndex="10" MouseDown="colapseBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Height="30" Margin="0 0 5 0"/>
+            <Image x:Name="closeBtn" Source="/Icons/Знак_закрыть.png"  Panel.ZIndex="10" MouseDown="closeBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Height="30" Margin="0 0 2 0"/>
+        </StackPanel>
+    </Grid>
+</Window>

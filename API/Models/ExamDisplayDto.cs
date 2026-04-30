@@ -21,7 +21,6 @@ namespace ZabgcExamsDesktop.API.Models
         public string GroupName { get; set; } = string.Empty;
         public string TypeOfLessonName { get; set; } = string.Empty;
         public string TypeOfExamName { get; set; } = string.Empty;
-        public string QualificationName { get; set; } = string.Empty;
         public string DisciplineName { get; set; } = string.Empty;
         public string TeachersDisplay { get; set; } = string.Empty;
         public string AudienceNumber { get; set; } = string.Empty;

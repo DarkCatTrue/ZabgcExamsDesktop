@@ -48,7 +48,7 @@
             </Style>
 
             <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignPaperButton}">
-                <Setter Property="Content" Value="Удалить 🗑️"/>
+                <Setter Property="Content" Value="🗑️ Удалить"/>
                 <Setter Property="Background" Value="#FFf44336"/>
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="Command"

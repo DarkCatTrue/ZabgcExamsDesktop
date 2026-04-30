@@ -1,7 +1,7 @@
-﻿using System.Net.Http;
+﻿using NLog;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Windows;
 using ZabgcExamsDesktop.API.Models;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -10,7 +10,7 @@ namespace ZabgcExamsDesktop.API
     public class ApiService
     {
         private readonly HttpClient _httpClient;
-
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public ApiService()
         {
             _httpClient = new HttpClient();
@@ -33,25 +33,25 @@ namespace ZabgcExamsDesktop.API
                 var json = JsonSerializer.Serialize(exam);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                Console.WriteLine($"Sending POST to exams: {json}");
+                Logger.Error($"Sending POST to exams: {json}");
 
                 var response = await _httpClient.PostAsync("exams", content);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("Exam created successfully");
+                    Logger.Error("Exam created successfully");
                     return true;
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
+                    Logger.Error($"API Error: {response.StatusCode} - {errorContent}");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Create exam error: {ex.Message}");
+                Logger.Error($"Create exam error: {ex.Message}");
                 return false;
             }
         }
@@ -87,7 +87,7 @@ namespace ZabgcExamsDesktop.API
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Search error: {ex.Message}");
+                Logger.Error($"Search error: {ex.Message}");
                 return new List<ExamDisplayDto>();
             }
         }
@@ -281,7 +281,6 @@ namespace ZabgcExamsDesktop.API
                 {
                     var json = await response.Content.ReadAsStringAsync();
 
-                    // Проверяем, что json не пустой
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         return default(T);
@@ -294,14 +293,13 @@ namespace ZabgcExamsDesktop.API
                 }
                 else
                 {
-                    // Логируем ошибку HTTP
-                    MessageBox.Show($"HTTP Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    Logger.Error($"HTTP Error: {response.StatusCode} - {response.ReasonPhrase}");
                     return default(T);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"API Request Error: {ex.Message}");
+                Logger.Error($"API Request Error: {ex.Message}");
                 return default(T);
             }
         }

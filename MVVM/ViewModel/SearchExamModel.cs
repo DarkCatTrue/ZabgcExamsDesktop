@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -87,8 +88,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private async Task LoadInitialDataAsync()
         {
-            await LoadReferenceDataAsync();
             await LoadAllDataAsync();
+            await LoadReferenceDataAsync();
         }
         private async Task LoadReferenceDataAsync()
         {
@@ -98,6 +99,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 var groupsTask = _apiService.GetGroupsAsync();
                 var teachersTask = _apiService.GetTeachersAsync();
                 var audiencesTask = _apiService.GetAudiencesAsync();
+
 
                 await Task.WhenAll(departmentsTask, groupsTask, teachersTask, audiencesTask);
 
@@ -114,7 +116,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки ComboBox: {ex.Message}");
+                Logger.Error($"Ошибка загрузки ComboBox: {ex.Message}");
             }
         }
         public async Task LoadAllDataAsync()
@@ -132,6 +134,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 Logger.Error($"Ошибка при загрузке данных через API: {ex}");
             }
         }
+
         private void GoToResultPage(object parameter)
         {
             Page resultPage = new ResultPage();
@@ -159,20 +162,24 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private void UpdateGroups()
         {
-            if (SelectedDepartment == null)
+            try
             {
-                FilteredGroups = new ObservableCollection<GroupDto>(Group);
-            }
-            else
-            {
-                var filtered = Group
-                    .Where(g => g.IdDepartment == SelectedDepartment.IdDepartment)
-                    .ToList();
+                if (SelectedDepartment == null)
+                {
+                    FilteredGroups = new ObservableCollection<GroupDto>(Group);
+                }
+                else
+                {
+                    var filtered = Group
+                        .Where(g => g.IdDepartment == SelectedDepartment.IdDepartment)
+                        .ToList();
 
-                FilteredGroups = new ObservableCollection<GroupDto>(filtered);
-            }
+                    FilteredGroups = new ObservableCollection<GroupDto>(filtered);
+                }
 
-            SelectedGroup = null;
+                SelectedGroup = null;
+            }
+            catch { }
         }
 
 

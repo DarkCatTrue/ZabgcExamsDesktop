@@ -98,7 +98,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public DbViewModel()
         {
             _apiService = new ApiService();
-            LoadData();
+            FirstOpen();
             BackToExamsCommand = new RelayCommand(BackToExamsPage);
             LoadTableCommand = new RelayCommand(ShowGrid);
             DeleteCommand = new RelayCommand(DeleteItem);
@@ -291,11 +291,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 switch (CurrentViewType)
                 {
                     case ViewType.Managers:
-                        await SaveAllItems(Managers, _apiService.CreateManagerAsync, _apiService.UpdateManagerAsync); 
+                        await SaveAllItems(Managers, _apiService.CreateManagerAsync, _apiService.UpdateManagerAsync);
                         break;
-                    
+
                     case ViewType.DepartmentOwners:
-                        await SaveAllItems(DepartmentOwners, _apiService.CreateDepartmentOwnerAsync, _apiService.UpdateDepartmentOwnerAsync); 
+                        await SaveAllItems(DepartmentOwners, _apiService.CreateDepartmentOwnerAsync, _apiService.UpdateDepartmentOwnerAsync);
                         break;
 
                     case ViewType.Departments:
@@ -444,25 +444,29 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 IsEditing = true;
             }
         }
+        private async Task FirstOpen()
+        {
+            await LoadData();
+            ShowGrid("Groups");
+        }
         private async Task LoadData()
         {
             try
             {
-
                 var departmentsTask = _apiService.GetDepartmentsAsync();
                 var groupsTask = _apiService.GetGroupsAsync();
                 var teachers = _apiService.GetTeachersAsync();
                 var audiences = _apiService.GetAudiencesAsync();
-                var typeOfExams = _apiService.GetTypeOfExamsAsync();
                 var disciplines = _apiService.GetDisciplinesAsync();
                 var managers = _apiService.GetManagersAsync();
                 var departmentOwnersTask = _apiService.GetDepartmentOwnersAsync();
 
-                await Task.WhenAll(departmentsTask, groupsTask, teachers, audiences, managers, typeOfExams, disciplines, departmentOwnersTask);
+                await Task.WhenAll(departmentsTask, groupsTask, teachers, audiences, managers, disciplines, departmentOwnersTask);
 
                 var departments = departmentsTask.Result;
                 var groups = groupsTask.Result;
                 var departmentOwners = departmentOwnersTask.Result;
+
 
                 foreach (var group in groups)
                 {
@@ -476,6 +480,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     departmentOwner.DepartmentName = department?.NameOfDepartment ?? "Не указано";
                 }
 
+
                 Departments = new ObservableCollection<DepartmentDto>(departments);
                 Groups = new ObservableCollection<GroupDto>(groups);
                 Audiences = new ObservableCollection<AudienceDto>(audiences.Result);
@@ -487,9 +492,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
+                MessageBox.Show($"Данные для редактирования базы данных не были загружены, ошибка : {ex}", "Ошибка загрузки данных", MessageBoxButton.OK, MessageBoxImage.Error);
                 Logger.Error($"Данные для редактирования базы данных не были загружены, ошибка : {ex}");
             }
         }
+
 
         private void ShowGrid(object parameter)
         {

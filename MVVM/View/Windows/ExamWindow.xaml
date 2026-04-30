@@ -12,6 +12,6 @@
     <Grid MouseDown="ToolBar_MouseDown">
         <Image x:Name="closeBtn" Grid.Row="0" Source="/Icons/Знак_закрыть.png"  Panel.ZIndex="10" MouseDown="closeBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Margin="321,1,1,371"/>
         <Image x:Name="colapseBtn"  Grid.Row="0" Source="/Icons/Знак_свернуть.png" Panel.ZIndex="10" MouseDown="colapseBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Margin="289,-1,33,369"/>
-        <Frame Source="/MVVM/View/Pages/ExamPage.xaml" x:Name="mainFrame" Panel.ZIndex="1" Margin="-2,-5,0,0" NavigationUIVisibility="Hidden"/>
+        <Frame Source="/MVVM/View/Pages/AddExamPage.xaml" x:Name="mainFrame" Panel.ZIndex="1" Margin="-2,-5,0,0" NavigationUIVisibility="Hidden"/>
     </Grid>
 </Window>
