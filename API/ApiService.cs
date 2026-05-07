@@ -18,7 +18,7 @@ namespace ZabgcExamsDesktop.API
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
             _httpClient = new HttpClient(handler);
 
-            _httpClient.BaseAddress = new Uri("https://localhost:7164/");
+            _httpClient.BaseAddress = new Uri("https://localhost/");
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
@@ -39,7 +39,7 @@ namespace ZabgcExamsDesktop.API
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Logger.Error("Exam created successfully");
+                    Logger.Info("Exam created successfully");
                     return true;
                 }
                 else

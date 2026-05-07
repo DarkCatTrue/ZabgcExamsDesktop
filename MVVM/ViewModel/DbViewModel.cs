@@ -17,7 +17,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        GroupAddWindow groupAddWindow;
         private readonly ApiService _apiService;
 
         private ObservableCollection<DepartmentDto> _departments;
@@ -49,128 +48,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 OnPropertyChanged();
                 UpdateItems();
             }
-        }
-
-
-        public ICommand LoadTableCommand { get; }
-        public ICommand BackToExamsCommand { get; }
-        public ICommand DeleteCommand { get; }
-        public ICommand EditCommand { get; }
-        public ICommand SaveCommand { get; }
-        public ICommand AddCommand { get; }
-        public ICommand AddNewGroupCommand { get; }
-
-        private void UpdateItems()
-        {
-            CurrentItems = CurrentViewType switch
-            {
-                ViewType.Departments => Departments,
-                ViewType.Groups => Groups,
-                ViewType.Audiences => Audiences,
-                ViewType.Teachers => Teachers,
-                ViewType.Disciplines => Disciplines,
-                ViewType.Managers => Managers,
-                ViewType.DepartmentOwners => DepartmentOwners,
-                _ => null
-            };
-        }
-        public object SelectedItem
-        {
-            get => _selectedItem;
-            set
-            {
-                _selectedItem = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-        public int? SelectedDepartmentId { get; set; }
-
-        public string EnterGroup
-        {
-            get => _enterGroup;
-            set
-            {
-                _enterGroup = value;
-                OnPropertyChanged();
-            }
-        }
-        public DbViewModel()
-        {
-            _apiService = new ApiService();
-            FirstOpen();
-            BackToExamsCommand = new RelayCommand(BackToExamsPage);
-            LoadTableCommand = new RelayCommand(ShowGrid);
-            DeleteCommand = new RelayCommand(DeleteItem);
-            EditCommand = new RelayCommand(EditItem);
-            SaveCommand = new RelayCommand(SaveItem);
-            AddCommand = new RelayCommand(AddNewItem);
-            AddNewGroupCommand = new RelayCommand(AddNewGroup);
-        }
-
-        private async void AddNewGroup(object parameter)
-        {
-            if (string.IsNullOrWhiteSpace(EnterGroup))
-            {
-                MessageBox.Show("Введите название группы!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (SelectedDepartmentId == null)
-            {
-                MessageBox.Show("Выберите отделение!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
-                if (department == null)
-                {
-                    MessageBox.Show("Выбранное отделение не найдено!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                var newGroup = new GroupDto
-                {
-                    NameOfGroup = EnterGroup.Trim(),
-                    IdDepartment = SelectedDepartmentId.Value
-                };
-
-                if (await _apiService.CreateGroupAsync(newGroup))
-                {
-                    await LoadData();
-                    MessageBox.Show($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' успешно добавлена!",
-                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    Logger.Info($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' была добавлена в базу данных.");
-
-                    EnterGroup = string.Empty;
-                    OnPropertyChanged(nameof(EnterGroup));
-                    ReloadPage();
-                }
-                else
-                {
-                    MessageBox.Show("Не удалось добавить группу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                Logger.Error($"Произошла ошибка добавления новой группы: '{EnterGroup}', ошибка: {ex}");
-            }
-        }
-
-        private void ReloadPage()
-        {
-            var newPage = new DataBasePage();
-            SearchExamWindow.pageManager.ChangePage(newPage);
-        }
-
-        public void BackToExamsPage(object parameter)
-        {
-            Page SearchExam = new SearchExamPage();
-            SearchExamWindow.pageManager.ChangePage(SearchExam);
         }
 
         public ObservableCollection<DepartmentDto> Departments
@@ -250,7 +127,130 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 OnPropertyChanged(nameof(IsNotEditing));
             }
         }
+        public object SelectedItem
+        {
+            get => _selectedItem;
+            set
+            {
+                _selectedItem = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        public int? SelectedDepartmentId { get; set; }
+
+        public string EnterGroup
+        {
+            get => _enterGroup;
+            set
+            {
+                _enterGroup = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool IsNotEditing => !IsEditing;
+
+        public ICommand LoadTableCommand { get; }
+        public ICommand BackToExamsCommand { get; }
+        public ICommand DeleteCommand { get; }
+        public ICommand EditCommand { get; }
+        public ICommand SaveCommand { get; }
+        public ICommand AddCommand { get; }
+        public ICommand AddNewGroupCommand { get; }
+
+        private void UpdateItems()
+        {
+            CurrentItems = CurrentViewType switch
+            {
+                ViewType.Departments => Departments,
+                ViewType.Groups => Groups,
+                ViewType.Audiences => Audiences,
+                ViewType.Teachers => Teachers,
+                ViewType.Disciplines => Disciplines,
+                ViewType.Managers => Managers,
+                ViewType.DepartmentOwners => DepartmentOwners,
+                _ => null
+            };
+        }
+        
+        public DbViewModel()
+        {
+            _apiService = new ApiService();
+            FirstOpen();
+            BackToExamsCommand = new RelayCommand(BackToExamsPage);
+            LoadTableCommand = new RelayCommand(ShowGrid);
+            DeleteCommand = new RelayCommand(DeleteItem);
+            EditCommand = new RelayCommand(EditItem);
+            SaveCommand = new RelayCommand(SaveItem);
+            AddCommand = new RelayCommand(AddNewItem);
+            AddNewGroupCommand = new RelayCommand(AddNewGroup);
+        }
+
+        private async void AddNewGroup(object parameter)
+        {
+            if (string.IsNullOrWhiteSpace(EnterGroup))
+            {
+                MessageBox.Show("Введите название группы!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (SelectedDepartmentId == null)
+            {
+                MessageBox.Show("Выберите отделение!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
+                if (department == null)
+                {
+                    MessageBox.Show("Выбранное отделение не найдено!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var newGroup = new GroupDto
+                {
+                    NameOfGroup = EnterGroup.Trim(),
+                    IdDepartment = SelectedDepartmentId.Value
+                };
+
+                if (await _apiService.CreateGroupAsync(newGroup))
+                {
+                    await LoadData();
+                    MessageBox.Show($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' успешно добавлена!",
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    Logger.Info($"Группа '{EnterGroup}' с отделением: '{department.NameOfDepartment}' была добавлена в базу данных.");
+
+                    EnterGroup = string.Empty;
+                    OnPropertyChanged(nameof(EnterGroup));
+                    ReloadPage();
+                }
+                else
+                {
+                    MessageBox.Show("Не удалось добавить группу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error($"Произошла ошибка добавления новой группы: '{EnterGroup}', ошибка: {ex}");
+            }
+        }
+
+        private void ReloadPage()
+        {
+            var newPage = new DataBasePage();
+            SearchExamWindow.pageManager.ChangePage(newPage);
+        }
+
+        public void BackToExamsPage(object parameter)
+        {
+            Page SearchExam = new SearchExamPage();
+            SearchExamWindow.pageManager.ChangePage(SearchExam);
+        }
 
         private void AddNewItem(object parameter)
         {
@@ -366,17 +366,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private void AddGroup()
         {
-            if (groupAddWindow == null || !groupAddWindow.IsLoaded)
-            {
-                groupAddWindow = new GroupAddWindow();
-                groupAddWindow.Closed += (s, args) => groupAddWindow = null;
-                groupAddWindow.Show();
-            }
-            else
-            {
-                groupAddWindow.Activate();
-                groupAddWindow.Focus();
-            }
+            GroupAddWindow groupAddWindow = new GroupAddWindow();
+            groupAddWindow.ShowDialog();
         }
 
         private async void DeleteItem(object parameter)

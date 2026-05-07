@@ -17,11 +17,11 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
     /// </summary>
     public partial class ExamPage : Page
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        //private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public ExamPage()
         {
             InitializeComponent();
-            DataContext = new AddExamModel();
+            DataContext = new CreateExamModel();
         }
 
 

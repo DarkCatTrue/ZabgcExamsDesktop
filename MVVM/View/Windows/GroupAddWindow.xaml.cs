@@ -14,10 +14,6 @@ namespace ZabgcExamsDesktop.MVVM.View.Windows
             InitializeComponent();
             DataContext = new DbViewModel();
         }
-        private void colapseBtn_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            WindowState = WindowState.Minimized;
-        }
 
         private void closeBtn_MouseDown(object sender, MouseButtonEventArgs e)
         {

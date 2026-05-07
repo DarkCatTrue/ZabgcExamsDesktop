@@ -1,7 +1,6 @@
 ﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,7 +14,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
     public class SearchExamModel : INotifyPropertyChanged
     {
-        private ExamWindow examWindow;
         private readonly ApiService _apiService;
 
 
@@ -36,7 +34,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public ICommand EditDataBaseCommand { get; set; }
         public ICommand SearchCommand { get; set; }
         public ICommand ClearSearchCommand { get; set; }
-        public ICommand SaveRowCommand { get; set; }
         public ICommand DeleteRowCommand { get; set; }
         public ICommand CreateResultCommand { get; set; }
 
@@ -156,7 +153,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при поиске: {ex.Message}");
+                MessageBox.Show($"Ошибка при поиске: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -164,20 +161,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         {
             try
             {
-                if (SelectedDepartment == null)
-                {
-                    FilteredGroups = new ObservableCollection<GroupDto>(Group);
-                }
+
+                if (SelectedDepartment == null || Group == null)
+                    FilteredGroups = new ObservableCollection<GroupDto>();
                 else
-                {
-                    var filtered = Group
-                        .Where(g => g.IdDepartment == SelectedDepartment.IdDepartment)
-                        .ToList();
-
-                    FilteredGroups = new ObservableCollection<GroupDto>(filtered);
-                }
-
-                SelectedGroup = null;
+                    FilteredGroups = new ObservableCollection<GroupDto>(
+                        Group.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
             }
             catch { }
         }
@@ -216,19 +205,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         }
         public void CreateExam(object parameter)
         {
-            if (examWindow == null || !examWindow.IsLoaded)
-            {
-                examWindow = new ExamWindow();
-                examWindow.Closed += (s, args) => examWindow = null;
-                examWindow.Show();
-            }
-            else
-            {
-                examWindow.Activate();
-                examWindow.Focus();
-            }
+            ExamWindow examWindow = new ExamWindow();
+            examWindow.ShowDialog();
         }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)

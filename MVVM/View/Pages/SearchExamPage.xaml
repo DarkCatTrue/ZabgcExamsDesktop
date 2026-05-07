@@ -9,15 +9,6 @@
       Title="SearchExamPage"
       Background="#323a47"
       >
-    <Page.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary>
-                    <!--<converters:TeachersConverter x:Key="TeachersConverter"/>-->
-                </ResourceDictionary>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="60"/>
