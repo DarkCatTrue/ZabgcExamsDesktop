@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using ZabgcExamsDesktop.MVVM.Model;
+using ZabgcExamsDesktop.Services;
 
 namespace ZabgcExamsDesktop.MVVM.View.Windows
 {

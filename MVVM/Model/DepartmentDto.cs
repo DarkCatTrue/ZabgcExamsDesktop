@@ -1,4 +1,4 @@
-﻿namespace ZabgcExamsDesktop.API.Models
+﻿namespace ZabgcExamsDesktop.MVVM.Model
 {
     public class DepartmentDto : BaseDto
     {

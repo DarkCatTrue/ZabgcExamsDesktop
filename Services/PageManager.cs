@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace ZabgcExamsDesktop.MVVM.Model
+namespace ZabgcExamsDesktop.Services
 {
     public class PageManager
     {

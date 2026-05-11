@@ -2,10 +2,10 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace ZabgcExamsDesktop.API
+namespace ZabgcExamsDesktop.Services.API
 {
     public class ApiService
     {
@@ -18,7 +18,7 @@ namespace ZabgcExamsDesktop.API
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
             _httpClient = new HttpClient(handler);
 
-            _httpClient.BaseAddress = new Uri("https://localhost/");
+            _httpClient.BaseAddress = new Uri("https://localhost/api/");
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));

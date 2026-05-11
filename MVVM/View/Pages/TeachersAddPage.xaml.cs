@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.ViewModel;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages

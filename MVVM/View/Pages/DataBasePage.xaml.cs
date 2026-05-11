@@ -1,7 +1,4 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using Microsoft.EntityFrameworkCore;
-using System.Windows.Data;
+﻿using System.Windows.Controls;
 using ZabgcExamsDesktop.MVVM.ViewModel;
 
 namespace ZabgcExamsDesktop.MVVM.View.Pages

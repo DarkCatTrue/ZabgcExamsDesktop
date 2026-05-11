@@ -29,32 +29,32 @@
         <Button Name="EditDataBaseBtn" Grid.ColumnSpan="7" Grid.Row="1" Content="Экзамены" Command="{Binding BackToExamsCommand}" Height="Auto"/>
 
         <UniformGrid Grid.Row="2" Grid.ColumnSpan="7" Rows="1" Columns="7">
-            <Button Name="GroupBtn" Content="Группы" Command="{Binding LoadTableCommand}" CommandParameter="Groups"/>
-            <Button Name="AudienceBtn" Content="Аудитории" Command="{Binding LoadTableCommand}" CommandParameter="Audiences"/>
-            <Button Name="TeachersBtn" Content="Преподаватели" Command="{Binding LoadTableCommand}" CommandParameter="Teachers"/>
-            <Button Name="DisciplinesBtn" Content="Дисциплины" Command="{Binding LoadTableCommand}" CommandParameter="Disciplines"/>
-            <Button Name="QualificationsBtn" Content="Менеджеры" Command="{Binding LoadTableCommand}" CommandParameter="Managers"/>
-            <Button Name="DepartmentBtn" Content="Отделения" Command="{Binding LoadTableCommand}" CommandParameter="Departments"/>
-            <Button Name="TypeOfExamsBtn" Content="Зав. Отделениями" Command="{Binding LoadTableCommand}" CommandParameter="DepartmentOwners"/>
+            <Button Content="Группы" Command="{Binding ShowGridCommand}" CommandParameter="Groups"/>
+            <Button Content="Аудитории" Command="{Binding ShowGridCommand}" CommandParameter="Audiences"/>
+            <Button Content="Преподаватели" Command="{Binding ShowGridCommand}" CommandParameter="Teachers"/>
+            <Button Content="Дисциплины" Command="{Binding ShowGridCommand}" CommandParameter="Disciplines"/>
+            <Button Content="Менеджеры" Command="{Binding ShowGridCommand}" CommandParameter="Managers"/>
+            <Button Content="Отделения" Command="{Binding ShowGridCommand}" CommandParameter="Departments"/>
+            <Button Content="Зав. Отделениями" Command="{Binding ShowGridCommand}" CommandParameter="DepartmentOwners"/>
         </UniformGrid>
 
         <UniformGrid Grid.ColumnSpan="7" Grid.Row="4" Rows="1">
 
             <Button Content="➕" 
-            Command="{Binding AddCommand}"
+            Command="{Binding AddNewItemCommand}"
             CommandParameter="{Binding}"
             Background="#FF4CAF50"
             Foreground="White"
             ToolTip="Добавить новую запись"/>
 
             <Button Content="✏️"
-            Command="{Binding EditCommand}"
+            Command="{Binding EditItemCommand}"
             CommandParameter="{Binding}"
             Background="#FF2196F3" 
             Foreground="White"/>
 
             <Button Content="💾" 
-            Command="{Binding SaveCommand}"
+            Command="{Binding SaveItemCommand}"
             Background="#FF009688"
             Foreground="White"
             ToolTip="Сохранить изменения"/>

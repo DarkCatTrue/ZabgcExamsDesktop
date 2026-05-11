@@ -1,7 +1,5 @@
 ﻿using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using ZabgcExamsDesktop.MVVM.Model;
 
 namespace ZabgcExamsDesktop
 {

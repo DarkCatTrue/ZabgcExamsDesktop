@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {

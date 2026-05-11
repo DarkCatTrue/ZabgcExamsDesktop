@@ -1,86 +1,40 @@
-﻿using NLog;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using NLog;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using ZabgcExamsDesktop.API;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
+using ZabgcExamsDesktop.Services.API;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
-    public class SearchExamModel : INotifyPropertyChanged
+    public partial class SearchExamModel : ObservableObject
     {
         private readonly ApiService _apiService;
 
-
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private ObservableCollection<DepartmentDto> departments;
-        private ObservableCollection<GroupDto> groups;
-        private ObservableCollection<TeacherDto> teachers;
-        private ObservableCollection<AudienceDto> audiences;
-        private ObservableCollection<GroupDto> _filteredGroups;
+        [ObservableProperty] private ObservableCollection<GroupDto> _group;
+        [ObservableProperty] private ObservableCollection<GroupDto> _filteredGroup;
+        [ObservableProperty] private ObservableCollection<TeacherDto> _teacher;
+        [ObservableProperty] private ObservableCollection<AudienceDto> _audience;
+        [ObservableProperty] private ObservableCollection<DepartmentDto> _department;
+        [ObservableProperty] private ObservableCollection<ExamDisplayDto> _searchResults;
 
-        private DepartmentDto _selectedDepartment;
-        private GroupDto _selectedGroup;
-        private TeacherDto _selectedTeacher;
-        private AudienceDto _selectedAudience;
-        private ObservableCollection<ExamDisplayDto> _searchResults;
-        public ICommand CreateExamCommand { get; set; }
-        public ICommand EditDataBaseCommand { get; set; }
-        public ICommand SearchCommand { get; set; }
-        public ICommand ClearSearchCommand { get; set; }
-        public ICommand DeleteRowCommand { get; set; }
-        public ICommand CreateResultCommand { get; set; }
+        [ObservableProperty] private DepartmentDto _selectedDepartment;
+        [ObservableProperty] private GroupDto _selectedGroup;
+        [ObservableProperty] private TeacherDto _selectedTeacher;
+        [ObservableProperty] private AudienceDto _selectedAudience;
 
-        public ObservableCollection<DepartmentDto> Department { get => departments; set { departments = value; OnPropertyChanged(); } }
-        public ObservableCollection<GroupDto> Group { get => groups; set { groups = value; OnPropertyChanged(); } }
-        public ObservableCollection<GroupDto> FilteredGroups { get => _filteredGroups; set { _filteredGroups = value; OnPropertyChanged(); } }
-        public ObservableCollection<TeacherDto> Teacher { get => teachers; set { teachers = value; OnPropertyChanged(); } }
-        public ObservableCollection<AudienceDto> Audience { get => audiences; set { audiences = value; OnPropertyChanged(); } }
-        public ObservableCollection<ExamDisplayDto> SearchResults
-        {
-            get => _searchResults;
-            set
-            {
-                _searchResults = value;
-                OnPropertyChanged();
-            }
-        }
-        public DepartmentDto SelectedDepartment
-        {
-            get => _selectedDepartment; set { _selectedDepartment = value; OnPropertyChanged(); UpdateGroups(); }
-        }
-
-        public GroupDto SelectedGroup
-        {
-            get => _selectedGroup; set { _selectedGroup = value; OnPropertyChanged(); }
-        }
-        public TeacherDto SelectedTeacher
-        {
-            get => _selectedTeacher; set { _selectedTeacher = value; OnPropertyChanged(); }
-        }
-
-        public AudienceDto SelectedAudience
-        {
-            get => _selectedAudience; set { _selectedAudience = value; OnPropertyChanged(); }
-        }
-
+        partial void OnSelectedDepartmentChanged(DepartmentDto value) => UpdateGroups();
 
         public SearchExamModel()
         {
             _apiService = new ApiService();
-            LoadInitialDataAsync();
-            DeleteRowCommand = new RelayCommand(async (param) => await DeleteExamAsync(param as ExamDisplayDto));
-            CreateExamCommand = new RelayCommand(CreateExam);
-            EditDataBaseCommand = new RelayCommand(EditDataBase);
-            SearchCommand = new RelayCommand(async async => await SearchAsync());
-            ClearSearchCommand = new RelayCommand(ClearSearch);
-            CreateResultCommand = new RelayCommand(GoToResultPage);
+            _ = LoadInitialDataAsync();
         }
 
         private async Task LoadInitialDataAsync()
@@ -102,7 +56,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 Department = new ObservableCollection<DepartmentDto>(departmentsTask.Result);
                 Group = new ObservableCollection<GroupDto>(groupsTask.Result);
-                FilteredGroups = new ObservableCollection<GroupDto>(Group);
+                FilteredGroup = new ObservableCollection<GroupDto>(Group);
                 Teacher = new ObservableCollection<TeacherDto>(teachersTask.Result);
                 Audience = new ObservableCollection<AudienceDto>(audiencesTask.Result);
 
@@ -132,12 +86,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        private void GoToResultPage(object parameter)
+        [RelayCommand]
+        private void GoToResult(object parameter)
         {
             Page resultPage = new ResultPage();
             SearchExamWindow.pageManager.ChangePage(resultPage);
         }
 
+        [RelayCommand]
         private async Task SearchAsync()
         {
             try
@@ -163,15 +119,15 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
 
                 if (SelectedDepartment == null || Group == null)
-                    FilteredGroups = new ObservableCollection<GroupDto>();
+                    FilteredGroup = new ObservableCollection<GroupDto>();
                 else
-                    FilteredGroups = new ObservableCollection<GroupDto>(
+                    FilteredGroup = new ObservableCollection<GroupDto>(
                         Group.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
             }
             catch { }
         }
 
-
+        [RelayCommand]
         private async Task DeleteExamAsync(ExamDisplayDto exam)
         {
             if (exam != null)
@@ -190,6 +146,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
+        [RelayCommand]
         public void ClearSearch(object parameter)
         {
             SelectedAudience = null;
@@ -198,21 +155,18 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SelectedTeacher = null;
         }
 
+        [RelayCommand]
         public void EditDataBase(object parameter)
         {
             Page EditDB = new DataBasePage();
             SearchExamWindow.pageManager.ChangePage(EditDB);
         }
+        
+        [RelayCommand]        
         public void CreateExam(object parameter)
         {
             ExamWindow examWindow = new ExamWindow();
             examWindow.ShowDialog();
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

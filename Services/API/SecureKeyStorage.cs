@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 
-namespace ZabgcExamsDesktop
+namespace ZabgcExamsDesktop.Services.API
 {
     public static class SecureKeyStorage
     {

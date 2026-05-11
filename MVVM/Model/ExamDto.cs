@@ -1,7 +1,8 @@
-﻿namespace ZabgcExamsDesktop.API.Models
+﻿namespace ZabgcExamsDesktop.MVVM.Model
 {
-    public class CreateExamDto
+    public class ExamDto
     {
+        public int IdExam { get; set; }
         public int IdGroup { get; set; }
         public int IdDiscipline { get; set; }
         public int IdTypeOfLesson { get; set; }

@@ -1,193 +1,67 @@
-﻿using NLog;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using NLog;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ZabgcExamsDesktop.API;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
+using ZabgcExamsDesktop.Services.API;
 using static ZabgcExamsDesktop.MVVM.View.Pages.DataGridColumnsBehavior;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
-    public class DbViewModel : INotifyPropertyChanged
+    public partial class DbViewModel : ObservableObject
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly ApiService _apiService;
-
-        private ObservableCollection<DepartmentDto> _departments;
-        private ObservableCollection<GroupDto> _groups;
-        private ObservableCollection<AudienceDto> _audiences;
-        private ObservableCollection<TeacherDto> _teachers;
-        private ObservableCollection<DisciplineDto> _disciplines;
-        private ObservableCollection<ManagerDto> _managers;
-        private ObservableCollection<DepartmentOwnerDto> _departmentOwners;
-
-        private object _selectedItem;
-        private string _enterGroup;
-        private bool _isEditing = false;
-
-        private object _currentItems;
-        public object CurrentItems
-        {
-            get => _currentItems;
-            set { _currentItems = value; OnPropertyChanged(); }
-        }
-
-        private ViewType _currentViewType;
-        public ViewType CurrentViewType
-        {
-            get => _currentViewType;
-            set
-            {
-                _currentViewType = value;
-                OnPropertyChanged();
-                UpdateItems();
-            }
-        }
-
-        public ObservableCollection<DepartmentDto> Departments
-        {
-            get => _departments;
-            set
-            {
-                _departments = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<DisciplineDto> Disciplines
-        {
-            get => _disciplines;
-            set
-            {
-                _disciplines = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<ManagerDto> Managers
-        {
-            get => _managers;
-            set
-            {
-                _managers = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<DepartmentOwnerDto> DepartmentOwners
-        {
-            get => _departmentOwners;
-            set
-            {
-                _departmentOwners = value;
-                OnPropertyChanged();
-            }
-        }
-        public ObservableCollection<GroupDto> Groups
-        {
-            get => _groups;
-            set
-            {
-                _groups = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<AudienceDto> Audiences
-        {
-            get => _audiences;
-            set
-            {
-                _audiences = value;
-                OnPropertyChanged();
-            }
-        }
-        public ObservableCollection<TeacherDto> Teachers
-        {
-            get => _teachers;
-            set
-            {
-                _teachers = value;
-                OnPropertyChanged();
-            }
-        }
-        public bool IsEditing
-        {
-            get => _isEditing;
-            set
-            {
-                _isEditing = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsNotEditing));
-            }
-        }
-        public object SelectedItem
-        {
-            get => _selectedItem;
-            set
-            {
-                _selectedItem = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
         public int? SelectedDepartmentId { get; set; }
-
-        public string EnterGroup
-        {
-            get => _enterGroup;
-            set
-            {
-                _enterGroup = value;
-                OnPropertyChanged();
-            }
-        }
-
         public bool IsNotEditing => !IsEditing;
 
-        public ICommand LoadTableCommand { get; }
-        public ICommand BackToExamsCommand { get; }
-        public ICommand DeleteCommand { get; }
-        public ICommand EditCommand { get; }
-        public ICommand SaveCommand { get; }
-        public ICommand AddCommand { get; }
-        public ICommand AddNewGroupCommand { get; }
+        [ObservableProperty] private ObservableCollection<GroupDto> _group;
+        [ObservableProperty] private ObservableCollection<DepartmentDto> _department;
+        [ObservableProperty] private ObservableCollection<DepartmentOwnerDto> _departmentOwner;
+        [ObservableProperty] private ObservableCollection<ManagerDto> _manager;
+        [ObservableProperty] private ObservableCollection<TeacherDto> _teacher;
+        [ObservableProperty] private ObservableCollection<AudienceDto> _audience;
+        [ObservableProperty] private ObservableCollection<DisciplineDto> _discipline;
+
+        [ObservableProperty] private object _currentItems;
+        [ObservableProperty] private object _selectedItem;
+        [ObservableProperty] private string _enterGroup;
+        [ObservableProperty] private bool _isEditing;
+        [ObservableProperty] private ViewType _currentViewType;
+
+        partial void OnIsEditingChanged(bool value) => OnPropertyChanged(nameof(IsNotEditing));
+        partial void OnCurrentViewTypeChanged(ViewType value) => UpdateItems();
+        partial void OnSelectedItemChanged(object value) => CommandManager.InvalidateRequerySuggested();
 
         private void UpdateItems()
         {
             CurrentItems = CurrentViewType switch
             {
-                ViewType.Departments => Departments,
-                ViewType.Groups => Groups,
-                ViewType.Audiences => Audiences,
-                ViewType.Teachers => Teachers,
-                ViewType.Disciplines => Disciplines,
-                ViewType.Managers => Managers,
-                ViewType.DepartmentOwners => DepartmentOwners,
+                ViewType.Departments => Department,
+                ViewType.Groups => Group,
+                ViewType.Audiences => Audience,
+                ViewType.Teachers => Teacher,
+                ViewType.Disciplines => Discipline,
+                ViewType.Managers => Manager,
+                ViewType.DepartmentOwners => DepartmentOwner,
                 _ => null
             };
         }
-        
+
         public DbViewModel()
         {
             _apiService = new ApiService();
-            FirstOpen();
-            BackToExamsCommand = new RelayCommand(BackToExamsPage);
-            LoadTableCommand = new RelayCommand(ShowGrid);
-            DeleteCommand = new RelayCommand(DeleteItem);
-            EditCommand = new RelayCommand(EditItem);
-            SaveCommand = new RelayCommand(SaveItem);
-            AddCommand = new RelayCommand(AddNewItem);
-            AddNewGroupCommand = new RelayCommand(AddNewGroup);
+            _ = FirstOpen();
         }
 
-        private async void AddNewGroup(object parameter)
+        [RelayCommand]
+        private async Task AddNewGroup(object parameter)
         {
             if (string.IsNullOrWhiteSpace(EnterGroup))
             {
@@ -203,7 +77,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
             try
             {
-                var department = Departments.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
+                var department = Department.FirstOrDefault(d => d.IdDepartment == SelectedDepartmentId);
                 if (department == null)
                 {
                     MessageBox.Show("Выбранное отделение не найдено!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -246,12 +120,14 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SearchExamWindow.pageManager.ChangePage(newPage);
         }
 
-        public void BackToExamsPage(object parameter)
+        [RelayCommand]
+        public void BackToExams(object parameter)
         {
             Page SearchExam = new SearchExamPage();
             SearchExamWindow.pageManager.ChangePage(SearchExam);
         }
 
+        [RelayCommand]
         private void AddNewItem(object parameter)
         {
             IsEditing = true;
@@ -263,15 +139,15 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     break;
 
                 case ViewType.Teachers:
-                    AddItem(Teachers, new TeacherDto());
+                    AddItem(Teacher, new TeacherDto());
                     break;
 
                 case ViewType.Audiences:
-                    AddItem(Audiences, new AudienceDto());
+                    AddItem(Audience, new AudienceDto());
                     break;
 
                 case ViewType.Disciplines:
-                    AddItem(Disciplines, new DisciplineDto());
+                    AddItem(Discipline, new DisciplineDto());
                     break;
             }
         }
@@ -284,38 +160,39 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             SelectedItem = item;
         }
 
-        private async void SaveItem(object parameter)
+        [RelayCommand]
+        private async Task SaveItem(object parameter)
         {
             try
             {
                 switch (CurrentViewType)
                 {
                     case ViewType.Managers:
-                        await SaveAllItems(Managers, _apiService.CreateManagerAsync, _apiService.UpdateManagerAsync);
+                        await SaveAllItems(Manager, _apiService.CreateManagerAsync, _apiService.UpdateManagerAsync);
                         break;
 
                     case ViewType.DepartmentOwners:
-                        await SaveAllItems(DepartmentOwners, _apiService.CreateDepartmentOwnerAsync, _apiService.UpdateDepartmentOwnerAsync);
+                        await SaveAllItems(DepartmentOwner, _apiService.CreateDepartmentOwnerAsync, _apiService.UpdateDepartmentOwnerAsync);
                         break;
 
                     case ViewType.Departments:
-                        await SaveAllItems(Departments, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync);
+                        await SaveAllItems(Department, _apiService.CreateDepartmentAsync, _apiService.UpdateDepartmentAsync);
                         break;
 
                     case ViewType.Groups:
-                        await SaveAllItems(Groups, _apiService.CreateGroupAsync, _apiService.UpdateGroupAsync);
+                        await SaveAllItems(Group, _apiService.CreateGroupAsync, _apiService.UpdateGroupAsync);
                         break;
 
                     case ViewType.Teachers:
-                        await SaveAllItems(Teachers, _apiService.CreateTeacherAsync, _apiService.UpdateTeacherAsync);
+                        await SaveAllItems(Teacher, _apiService.CreateTeacherAsync, _apiService.UpdateTeacherAsync);
                         break;
 
                     case ViewType.Audiences:
-                        await SaveAllItems(Audiences, _apiService.CreateAudienceAsync, _apiService.UpdateAudienceAsync);
+                        await SaveAllItems(Audience, _apiService.CreateAudienceAsync, _apiService.UpdateAudienceAsync);
                         break;
 
                     case ViewType.Disciplines:
-                        await SaveAllItems(Disciplines, _apiService.CreateDisciplineAsync, _apiService.UpdateDisciplineAsync);
+                        await SaveAllItems(Discipline, _apiService.CreateDisciplineAsync, _apiService.UpdateDisciplineAsync);
                         break;
                 }
 
@@ -370,7 +247,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             groupAddWindow.ShowDialog();
         }
 
-        private async void DeleteItem(object parameter)
+        [RelayCommand]
+        private async Task DeleteItem(object parameter)
         {
             if (parameter == null) return;
 
@@ -386,25 +264,25 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     switch (parameter)
                     {
                         case GroupDto g:
-                            Groups.Remove(g);
+                            Group.Remove(g);
                             success = await _apiService.DeleteGroupAsync(g.IdGroup);
                             Logger.Warn($"Группа '{g.IdGroup}' была удалена из базы данных.");
                             break;
 
                         case AudienceDto a:
-                            Audiences.Remove(a);
+                            Audience.Remove(a);
                             success = await _apiService.DeleteAudienceAsync(a.IdAudience);
                             Logger.Warn($"Аудитория '{a.IdAudience}' была удалена из базы данных.");
                             break;
 
                         case TeacherDto t:
-                            Teachers.Remove(t);
+                            Teacher.Remove(t);
                             success = await _apiService.DeleteTeacherAsync(t.IdTeacher);
                             Logger.Warn($"Преподаватель '{t.IdTeacher}' был удален из базы данных.");
                             break;
 
                         case DisciplineDto d:
-                            Disciplines.Remove(d);
+                            Discipline.Remove(d);
                             success = await _apiService.DeleteDisciplineAsync(d.IdDiscipline);
                             Logger.Warn($"Дисциплина '{d.IdDiscipline}' была удалена из базы данных.");
                             break;
@@ -427,6 +305,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 }
             }
         }
+
+        [RelayCommand]
         private void EditItem(object parameter)
         {
             SelectedItem = parameter;
@@ -472,13 +352,13 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 }
 
 
-                Departments = new ObservableCollection<DepartmentDto>(departments);
-                Groups = new ObservableCollection<GroupDto>(groups);
-                Audiences = new ObservableCollection<AudienceDto>(audiences.Result);
-                Teachers = new ObservableCollection<TeacherDto>(teachers.Result);
-                Disciplines = new ObservableCollection<DisciplineDto>(disciplines.Result);
-                Managers = new ObservableCollection<ManagerDto>(managers.Result);
-                DepartmentOwners = new ObservableCollection<DepartmentOwnerDto>(departmentOwners);
+                Department = new ObservableCollection<DepartmentDto>(departments);
+                Group = new ObservableCollection<GroupDto>(groups);
+                Audience = new ObservableCollection<AudienceDto>(audiences.Result);
+                Teacher = new ObservableCollection<TeacherDto>(teachers.Result);
+                Discipline = new ObservableCollection<DisciplineDto>(disciplines.Result);
+                Manager = new ObservableCollection<ManagerDto>(managers.Result);
+                DepartmentOwner = new ObservableCollection<DepartmentOwnerDto>(departmentOwners);
                 Logger.Info("Данные для редактирования базы данных успешно загружены.");
             }
             catch (Exception ex)
@@ -488,7 +368,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-
+        [RelayCommand]
         private void ShowGrid(object parameter)
         {
             if (parameter is string gridName &&
@@ -498,12 +378,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 Logger.Info($"Открыта таблица: {viewType}");
             }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -52,7 +52,7 @@
                 <Setter Property="Background" Value="#FFf44336"/>
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="Command"
-            Value="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+            Value="{Binding DataContext.DeleteItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                 <Setter Property="CommandParameter" Value="{Binding}"/>
             </Style>
 

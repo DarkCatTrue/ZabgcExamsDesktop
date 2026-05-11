@@ -7,10 +7,10 @@ using iText.Layout.Element;
 using iText.Layout.Properties;
 using System.Collections.ObjectModel;
 using System.IO;
-using ZabgcExamsDesktop.API;
-using ZabgcExamsDesktop.API.Models;
+using ZabgcExamsDesktop.MVVM.Model;
+using ZabgcExamsDesktop.Services.API;
 
-namespace ZabgcExamsDesktop.MVVM.Model
+namespace ZabgcExamsDesktop.Services
 {
     public class PdfReportService
     {
