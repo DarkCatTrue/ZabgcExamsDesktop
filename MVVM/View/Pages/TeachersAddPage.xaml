@@ -33,7 +33,7 @@
             <Button Content="Удалить" Margin="0 10 0 0" Command="{Binding RemoveTeacherCommand}"/>
         </StackPanel>
 
-        <Button Grid.Row="3" Width="115" Grid.Column="1" Content="Сохранить" Command="{Binding SaveNewTeachersCommand}"/>
+        <Button Grid.Row="3" Width="115" Grid.Column="1" Content="Сохранить" Command="{Binding SaveAndExitCommand}"/>
 
     </Grid>
 </Page>

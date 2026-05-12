@@ -1,7 +1,8 @@
-﻿using NLog;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -9,40 +10,18 @@ using ZabgcExamsDesktop.MVVM.Model;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
-    public class TeacherSelectionViewModel : INotifyPropertyChanged
+    public partial class TeacherSelectionViewModel : ObservableObject
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly Action<List<TeacherDto>, string> _onSave;
         private Window _currentWindow;
 
-        public ObservableCollection<TeacherDto> Teacher { get; set; }
-        public ObservableCollection<TeacherDto> SelectedTeachers { get; set; }
-
-        private TeacherDto _selectedAvailableTeacher;
-        public TeacherDto SelectedAvailableTeacher
-        {
-            get => _selectedAvailableTeacher;
-            set { _selectedAvailableTeacher = value; OnPropertyChanged(); }
-        }
-
-        private TeacherDto _selectedTeacherToRemove;
-        public TeacherDto SelectedTeacherToRemove
-        {
-            get => _selectedTeacherToRemove;
-            set { _selectedTeacherToRemove = value; OnPropertyChanged(); }
-        }
-
-        private ICollectionView _teachersView;
-        public ICollectionView TeachersView
-        {
-            get => _teachersView;
-            set { _teachersView = value; OnPropertyChanged(); }
-        }
-
-        public ICommand AddTeacherCommand { get; set; }
-        public ICommand RemoveTeacherCommand { get; set; }
-        public ICommand SaveNewTeachersCommand { get; set; }
+        [ObservableProperty] public ObservableCollection<TeacherDto> _teacher;
+        [ObservableProperty] public ObservableCollection<TeacherDto> _selectedTeachers;
+        [ObservableProperty] public TeacherDto _selectedAvailableTeacher;
+        [ObservableProperty] public TeacherDto _selectedTeacherToRemove;
+        [ObservableProperty] public ICollectionView _teachersView;
 
         public TeacherSelectionViewModel(ObservableCollection<TeacherDto> allTeachers,
                                     string currentTeachersText,
@@ -55,7 +34,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
             RestoreSelectedTeachersFromText(currentTeachersText);
             SetupSorting();
-            InitializeCommands();
         }
         public void SetWindow(Window window)
         {
@@ -89,13 +67,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             TeachersView.SortDescriptions.Add(new SortDescription("FullName", ListSortDirection.Ascending));
         }
 
-        private void InitializeCommands()
-        {
-            AddTeacherCommand = new RelayCommand(_ => AddTeacher());
-            RemoveTeacherCommand = new RelayCommand(_ => RemoveTeacher());
-            SaveNewTeachersCommand = new RelayCommand(_ => SaveAndClose());
-        }
-
+        [RelayCommand]
         private void AddTeacher()
         {
             if (SelectedAvailableTeacher != null)
@@ -106,6 +78,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
+        [RelayCommand]
         private void RemoveTeacher()
         {
             if (SelectedTeacherToRemove != null)
@@ -120,7 +93,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        private void SaveAndClose()
+        [RelayCommand]
+        private void SaveAndExit()
         {
             try
             {
@@ -135,9 +109,5 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 Logger.Error($"Ошибка при добавлении членов ЭК: {ex}");
             }
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

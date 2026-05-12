@@ -8,15 +8,6 @@
       d:DesignHeight="1080" d:DesignWidth="1920"
       Title="ResultPage"
       Background="#323a47">
-    <Page.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary>
-                    <!--<converters:TeachersConverter x:Key="TeachersConverter"/>-->
-                </ResourceDictionary>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="60"/>
@@ -31,13 +22,13 @@
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button Grid.Row="1" Grid.ColumnSpan="6" Content="Вернуться назад" Command="{Binding BackToSearch}" Height="Auto"/>
-        <ComboBox x:Name="DepartmentComboBox" Grid.Row="2" ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="NameOfDepartment" Height="Auto"/>
+        <Button Grid.Row="1" Grid.ColumnSpan="6" Content="Вернуться назад" Command="{Binding BackToSearchCommand}" Height="Auto"/>
+        <ComboBox x:Name="DepartmentComboBox" Grid.Row="2" ItemsSource="{Binding Department}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="NameOfDepartment" Height="Auto"/>
         <ListBox x:Name="GroupsListBox" 
          Grid.Row="2"
          SelectionMode="Multiple"
          Grid.Column="1" 
-         ItemsSource="{Binding FilteredGroups}"
+         ItemsSource="{Binding FilteredGroup}"
          Height="Auto">
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -66,7 +57,7 @@
             Grid.Row="2"
             Grid.Column="4" 
             Content="Сохранить в PDF" 
-            Command="{Binding SaveToPDFCommand}">
+            Command="{Binding SavePdfCommand}">
         </Button>
 
         <DataGrid
@@ -76,7 +67,7 @@
             AutoGenerateColumns="False"
             CanUserAddRows="False"
             IsReadOnly="True"
-            ItemsSource="{Binding SearchResults}">
+            ItemsSource="{Binding SearchResult}">
 
 
 
@@ -114,24 +105,16 @@
                            Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}" 
                            Width="Auto"/>
 
-                <!-- Колонка действий -->
                 <DataGridTemplateColumn Header="Действия" Width="Auto">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="🗑️ Удалить" 
-                                Command="{Binding DataContext.DeleteSingleItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                CommandParameter="{Binding}"
-                                Margin="2" Padding="5,2" Width="Auto"
-                                Background="#FFf44336" Foreground="White"
-                                ToolTip="Удалить эту строку из отчёта"/>
+                                <Button Style="{StaticResource DeleteButtonStyle}"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid> 
-                  
-            
     </Grid>
 </Page>

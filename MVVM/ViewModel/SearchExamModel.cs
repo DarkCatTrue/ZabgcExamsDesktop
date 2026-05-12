@@ -128,7 +128,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         }
 
         [RelayCommand]
-        private async Task DeleteExamAsync(ExamDisplayDto exam)
+        private async Task DeleteItemAsync(ExamDisplayDto exam)
         {
             if (exam != null)
             {

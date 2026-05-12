@@ -1,10 +1,9 @@
-﻿using Microsoft.Win32;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Input;
 using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.MVVM.View.Pages;
 using ZabgcExamsDesktop.MVVM.View.Windows;
@@ -13,58 +12,28 @@ using ZabgcExamsDesktop.Services.API;
 
 namespace ZabgcExamsDesktop.MVVM.ViewModel
 {
-    public class PrintResultModel : INotifyPropertyChanged
+    public partial class PrintResultModel : ObservableObject
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly ApiService _apiService;
         private readonly PdfReportService _pdfReportService;
+        public string SelectedResult { get; set; }
 
-        public ICommand SaveToPDFCommand { get; }
-        public ICommand LoadDbCommand { get; }
-        public ICommand BackToSearch { get; }
-        public ICommand SearchCommand { get; }
-        public ICommand DeleteSingleItemCommand { get; }
+        [ObservableProperty] public ObservableCollection<ExamDisplayDto> _searchResult;
+        [ObservableProperty] public ObservableCollection<GroupDto> _group;
+        [ObservableProperty] public ObservableCollection<DepartmentDto> _department;
+        [ObservableProperty] public ObservableCollection<GroupDto> _filteredGroup;
+        [ObservableProperty] private ObservableCollection<GroupDto> _selectedGroup;
+
+        [ObservableProperty] public DepartmentDto _selectedDepartment;
+        partial void OnSelectedDepartmentChanged(DepartmentDto value) => UpdateFilteredGroups();
 
         public PrintResultModel()
         {
             _apiService = new ApiService();
             _pdfReportService = new PdfReportService(_apiService);
-            BackToSearch = new RelayCommand(BackToPage);
-            SearchCommand = new RelayCommand(async (param) => await SearchAsync());
-            SaveToPDFCommand = new RelayCommand(async (param) => await SaveToPdfAsync());
-            DeleteSingleItemCommand = new RelayCommand(DeleteSingleItem);
-            LoadDbAsync();
-        }
-
-        public ObservableCollection<ExamDisplayDto> SearchResults { get; set; } = new();
-        public ObservableCollection<DepartmentDto> Departments { get; set; } = new();
-        public ObservableCollection<GroupDto> Groups { get; set; } = new();
-        public ObservableCollection<GroupDto> FilteredGroups { get; set; } = new();
-        public string SelectedResult { get; set; }
-
-        private ObservableCollection<GroupDto> _selectedGroups = new();
-        private DepartmentDto _selectedDepartment = new();
-
-        public DepartmentDto SelectedDepartment
-        {
-            get => _selectedDepartment;
-            set
-            {
-                _selectedDepartment = value;
-                OnPropertyChanged();
-                UpdateFilteredGroups();
-            }
-        }
-
-        public ObservableCollection<GroupDto> SelectedGroups
-        {
-            get => _selectedGroups;
-            set
-            {
-                _selectedGroups = value;
-                OnPropertyChanged();
-            }
+            _ = LoadDbAsync();
         }
 
         public List<string> ResultItems { get; } = new List<string>
@@ -94,7 +63,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 if (departmentId.HasValue)
                 {
                     filteredExams = filteredExams.Where(e =>
-                        Departments.FirstOrDefault(d => d.NameOfDepartment == e.DepartmentName)?.IdDepartment == departmentId);
+                        Department.FirstOrDefault(d => d.NameOfDepartment == e.DepartmentName)?.IdDepartment == departmentId);
                 }
 
                 if (groupIds != null && groupIds.Any())
@@ -122,14 +91,15 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private List<int> GetSelectedGroupIds()
         {
-            if (FilteredGroups == null || !FilteredGroups.Any())
+            if (FilteredGroup == null || !FilteredGroup.Any())
             {
                 return new List<int>();
             }
-            var selectedGroups = FilteredGroups.Where(g => g.IsSelected).ToList();
+            var selectedGroups = FilteredGroup.Where(g => g.IsSelected).ToList();
             return selectedGroups.Select(g => g.IdGroup).ToList();
         }
 
+        [RelayCommand]
         private async Task SearchAsync()
         {
 
@@ -148,8 +118,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     item.IsSelected = false;
                 }
 
-                SearchResults = new ObservableCollection<ExamDisplayDto>(results);
-                OnPropertyChanged(nameof(SearchResults));
+                SearchResult = new ObservableCollection<ExamDisplayDto>(results);
+                OnPropertyChanged(nameof(SearchResult));
 
                 ShowSearchResultMessage(results.Count);
             }
@@ -182,11 +152,11 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         }
         public void UpdateFilteredGroups()
         {
-            FilteredGroups = SelectedDepartment == null
-                ? new ObservableCollection<GroupDto>(Groups)
-                : new ObservableCollection<GroupDto>(Groups.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
+            FilteredGroup = SelectedDepartment == null
+                ? new ObservableCollection<GroupDto>(Group)
+                : new ObservableCollection<GroupDto>(Group.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
 
-            OnPropertyChanged(nameof(FilteredGroups));
+            OnPropertyChanged(nameof(FilteredGroup));
         }
 
         private void ShowSearchResultMessage(int count)
@@ -203,7 +173,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             MessageBox.Show(message, "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private async Task SaveToPdfAsync()
+        [RelayCommand]
+        private async Task SavePdfAsync()
         {
 
             if (!ValidatePdfData()) return;
@@ -211,7 +182,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             var filePath = GetSaveFilePath();
             if (string.IsNullOrEmpty(filePath)) return;
 
-            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResults, SelectedDepartment, SelectedResult);
+            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResult, SelectedDepartment, SelectedResult);
 
             if (success)
             {
@@ -232,7 +203,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
                 var filteredGroup = _apiService.GetGroupsAsync();
                 await Task.WhenAll(filteredGroup);
-                FilteredGroups = new ObservableCollection<GroupDto>(filteredGroup.Result);
+                FilteredGroup = new ObservableCollection<GroupDto>(filteredGroup.Result);
 
                 var (departments, groups, exams) = await LoadBasicDataAsync();
                 await ProcessLoadedDataAsync(departments, groups, exams);
@@ -245,7 +216,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             }
         }
 
-        private void BackToPage(object parameter)
+        [RelayCommand]
+        private void BackToSearch(object parameter)
         {
             var searchExamPage = new SearchExamPage();
             SearchExamWindow.pageManager.ChangePage(searchExamPage);
@@ -253,7 +225,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         private bool ValidatePdfData()
         {
-            if (SearchResults == null || !SearchResults.Any())
+            if (SearchResult == null || !SearchResult.Any())
             {
                 ShowWarningMessage("Нет данных для сохранения в PDF");
                 return false;
@@ -298,30 +270,31 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 group.DepartmentName = departments.FirstOrDefault(d => d.IdDepartment == group.IdDepartment)?.NameOfDepartment ?? "Не указано";
             }
 
-            Departments = new ObservableCollection<DepartmentDto>(departments);
-            Groups = new ObservableCollection<GroupDto>(groups);
-            SearchResults = new ObservableCollection<ExamDisplayDto>(exams);
+            Department = new ObservableCollection<DepartmentDto>(departments);
+            Group = new ObservableCollection<GroupDto>(groups);
+            SearchResult = new ObservableCollection<ExamDisplayDto>(exams);
 
             NotifyCollectionsChanged();
         }
 
-        private void DeleteSingleItem(object parameter)
+        [RelayCommand]
+        private void DeleteItem(object parameter)
         {
             if (parameter is ExamDisplayDto itemToRemove)
             {
-                if (SearchResults.Contains(itemToRemove))
+                if (SearchResult.Contains(itemToRemove))
                 {
-                    SearchResults.Remove(itemToRemove);
-                    OnPropertyChanged(nameof(SearchResults));
+                    SearchResult.Remove(itemToRemove);
+                    OnPropertyChanged(nameof(SearchResult));
                     ShowInfoMessage("Строка удалена из отчёта");
                 }
             }
         }
         private void NotifyCollectionsChanged()
         {
-            OnPropertyChanged(nameof(Departments));
-            OnPropertyChanged(nameof(Groups));
-            OnPropertyChanged(nameof(SearchResults));
+            OnPropertyChanged(nameof(Department));
+            OnPropertyChanged(nameof(Group));
+            OnPropertyChanged(nameof(SearchResult));
         }
 
         private void HandleLoadError(Exception ex)
@@ -343,12 +316,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private void ShowWarningMessage(string message)
         {
             MessageBox.Show(message, "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
