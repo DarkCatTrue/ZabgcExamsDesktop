@@ -18,7 +18,7 @@ namespace ZabgcExamsDesktop.Services.API
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
             _httpClient = new HttpClient(handler);
 
-            _httpClient.BaseAddress = new Uri("https://localhost/api/");
+            _httpClient.BaseAddress = new Uri("https://exams.zabgc.ru/api/");
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));

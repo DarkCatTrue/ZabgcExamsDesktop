@@ -13,7 +13,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="60"/>
             <RowDefinition Height="40"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="35"/>
             <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -22,22 +22,62 @@
             <ColumnDefinition/>
             <ColumnDefinition/>
             <ColumnDefinition/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
-        <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}" Height="Auto"/>
-        <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" Command="{Binding CreateExamCommand}" Content="Добавить экзамен" Height="Auto"/>
-        <Button Name="CreateResult" Grid.Column="4" Grid.Row="1" Command="{Binding GoToResultCommand}" Content="Печать отчёта" Height="Auto"/>
-        <ComboBox Grid.Column="0" Grid.Row="3" x:Name="DepartmentsComboBox" ItemsSource="{Binding Department, Mode = OneWay}" DisplayMemberPath="NameOfDepartment" SelectedItem="{Binding SelectedDepartment, Mode=TwoWay}"/>
-        <ComboBox Grid.Column="1" Grid.Row="3" x:Name="GroupsComboBox" IsEditable="True" ItemsSource="{Binding FilteredGroup, Mode = OneWay}" DisplayMemberPath="NameOfGroup" SelectedValuePath="IdGroup" SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"/>
-        <ComboBox Grid.Row="3" Grid.Column="2" IsEditable="True" ItemsSource="{Binding Teacher, Mode=OneWay}" DisplayMemberPath="FullName" SelectedValuePath="IdTeacher" SelectedItem="{Binding SelectedTeacher, Mode=TwoWay}"/>
-        <ComboBox Grid.Row="3" Grid.Column="3" IsEditable="True" ItemsSource="{Binding Audience, Mode=OneWay}" DisplayMemberPath="NumberAudience" SelectedValuePath="IdAudience" SelectedItem="{Binding SelectedAudience, Mode=TwoWay}"/>
+        
+        <Button Name="EditDataBaseBtn" Grid.ColumnSpan="2" Grid.Row="1" Content="Редактирование базы данных" Command="{Binding EditDataBaseCommand}"/>
+        <Button Name="CreateSchedule" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" Command="{Binding CreateExamCommand}" Content="Добавить экзамен"/>
+        <Button Name="CreateResult" Grid.Column="4" Grid.ColumnSpan="2" Grid.Row="1" Command="{Binding GoToResultCommand}" Content="Печать отчёта"/>
+
+        <!-- Отделения -->
+        <ComboBox 
+          Grid.Row="3"
+          ItemsSource="{Binding FilteredDepartments}"
+          DisplayMemberPath="NameOfDepartment"
+          SelectedItem="{Binding SelectedDepartment}"
+          IsEditable="True"
+          IsTextSearchEnabled="False"
+          Text="{Binding DepartmentSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <ComboBox 
+          Grid.Row="3"
+          Grid.Column="1"
+          ItemsSource="{Binding FilteredGroups}"
+          DisplayMemberPath="NameOfGroup"
+          SelectedItem="{Binding SelectedGroup}"
+          IsEditable="True"
+          IsTextSearchEnabled="False"
+          Text="{Binding GroupSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <ComboBox 
+          Grid.Row="3" Grid.Column="2"
+          ItemsSource="{Binding FilteredTeachers}"
+          DisplayMemberPath="FullName"
+          SelectedItem="{Binding SelectedTeacher}"
+          IsEditable="True"
+          IsTextSearchEnabled="False"
+          Text="{Binding TeacherSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <ComboBox 
+          Grid.Row="3" Grid.Column="3"
+          ItemsSource="{Binding FilteredAudiences}"
+          DisplayMemberPath="NumberAudience"
+          SelectedItem="{Binding SelectedAudience}"
+          IsEditable="True"
+          IsTextSearchEnabled="False"
+          Text="{Binding AudienceSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
         <TextBlock Text="Отделение" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Группа" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Преподаватель" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
         <TextBlock Text="Аудитория" Grid.Row="2" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource GlobalTextBlockStyle}" />
-        <Button Name="SearchBtn" Grid.Column="4" Grid.Row="2" Height="30" Content="Поиск" Command="{Binding SearchCommand}"/>
-        <Button Name="ClearSearchBtn" Grid.Column="4" Grid.Row="3" Height="30" Content="Очистить поиск" Command="{Binding ClearSearchCommand}"/>
-        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="5" Grid.Row="4" 
+
+        <Button Grid.Column="4" Grid.Row="2" Margin="2 -2 2 0" Content="Поиск" Command="{Binding SearchCommand}"/>
+        <Button Grid.Column="5" Grid.Row="2" Margin="2 -2 2 0"  Content="Очистить поиск" Command="{Binding ClearSearchCommand}"/>
+        <Button Grid.Column="4" Grid.ColumnSpan="2" Grid.Row="3" Content="Удалить неактуальные экзамены" Command="{Binding DeleteOldExamsCommand}"/>
+
+        <DataGrid x:Name="ScheduleGrid" Grid.ColumnSpan="6" Grid.Row="4" 
           ItemsSource="{Binding SearchResults}"
           AutoGenerateColumns="False"
           CanUserAddRows="False"
