@@ -7,14 +7,14 @@ using ZabgcExamsDesktop.MVVM.View.Pages;
 namespace ZabgcExamsDesktop.MVVM.View.Windows
 {
     /// <summary>
-    /// Логика взаимодействия для TeachersAddWindow.xaml
+    /// Логика взаимодействия для GroupsSelectionWindow.xaml
     /// </summary>
-    public partial class TeachersAddWindow : Window
+    public partial class GroupsSelectionWindow : Window
     {
-        public TeachersAddWindow(ObservableCollection<TeacherDto> allTeachers, string currentTeachersText, Action<List<TeacherDto>, string> onSave)
+        public GroupsSelectionWindow(ObservableCollection<GroupDto> groups, string currentGroupsText, Action<List<GroupDto>, string> onSave)
         {
             InitializeComponent();
-            var page = new TeachersAddPage(allTeachers, currentTeachersText, onSave);
+            var page = new SelectionGroupsPage(groups, currentGroupsText, onSave);
             page.ViewModel.SetWindow(this);
             mainFrame.Navigate(page);
         }

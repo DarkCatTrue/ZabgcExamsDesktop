@@ -103,6 +103,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         private void FilterGroupsView() => GroupsView?.Refresh();
         private void FilterAudienceView() => AudienceView?.Refresh();
         private void FilterDisciplineView() => DisciplineView?.Refresh();
+
         private void InitializeViews()
         {
             GroupsView = CollectionViewSource.GetDefaultView(Group);

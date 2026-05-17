@@ -26,6 +26,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         [ObservableProperty] public ObservableCollection<GroupDto> _filteredGroup;
         [ObservableProperty] private ObservableCollection<GroupDto> _selectedGroup;
 
+        [ObservableProperty] private List<GroupDto> _selectedGroups = new();
+        [ObservableProperty] private string _groupsText = string.Empty;
+
         [ObservableProperty] public DepartmentDto _selectedDepartment;
         partial void OnSelectedDepartmentChanged(DepartmentDto value) => UpdateFilteredGroups();
 
@@ -43,6 +46,16 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             "Квалификационный"
         };
 
+        [RelayCommand]
+        private void SelectionGroups()
+        {
+            var dialog = new GroupsSelectionWindow(Group, GroupsText, (selectedGroups, groupsText) =>
+            {
+                SelectedGroups = selectedGroups;
+                GroupsText = groupsText;
+            });
+            dialog.ShowDialog();
+        }
         public async Task<List<ExamDisplayDto>> SearchExamsAsync(string typeOfExamName, int? departmentId = null, List<int> groupIds = null)
         {
             try
@@ -113,15 +126,8 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 var selectedGroupIds = GetSelectedGroupIds();
                 var results = await SearchExamsAsync(typeOfExamName, departmentId, selectedGroupIds);
 
-                foreach (var item in results)
-                {
-                    item.IsSelected = false;
-                }
-
                 SearchResult = new ObservableCollection<ExamDisplayDto>(results);
                 OnPropertyChanged(nameof(SearchResult));
-
-                ShowSearchResultMessage(results.Count);
             }
             catch (Exception ex)
             {
@@ -157,15 +163,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 : new ObservableCollection<GroupDto>(Group.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
 
             OnPropertyChanged(nameof(FilteredGroup));
-        }
-
-        private void ShowSearchResultMessage(int count)
-        {
-            var message = count > 0
-                ? $"Найдено {count} экзаменов"
-                : "Экзамены по заданным критериям не найдены";
-
-            ShowInfoMessage(message);
         }
 
         private void ShowInfoMessage(string message)

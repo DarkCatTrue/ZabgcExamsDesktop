@@ -22,12 +22,19 @@
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button Grid.Row="1" Grid.ColumnSpan="6" Content="Вернуться назад" Command="{Binding BackToSearchCommand}" Height="Auto"/>
-        <ComboBox x:Name="DepartmentComboBox" Grid.Row="2" ItemsSource="{Binding Department}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="NameOfDepartment" Height="Auto"/>
-        <ListBox x:Name="GroupsListBox" 
+        
+        <Button Grid.Row="1" Grid.ColumnSpan="6" Content="Вернуться назад" Command="{Binding BackToSearchCommand}"/>
+        
+        <ComboBox x:Name="DepartmentComboBox" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Department}" SelectedItem="{Binding SelectedDepartment}" DisplayMemberPath="NameOfDepartment"/>
+
+        <Button Content="+" Grid.Column="2" Grid.Row="2" Command="{Binding SelectionGroupsCommand}" Width="40" Height="30" Margin="340 0 0 0"/>
+        
+        <TextBox Foreground="White" IsReadOnly="True" Text="{Binding GroupsText}" Grid.Row="2" Grid.Column="2" Width="340" HorizontalAlignment="Left"/>
+
+        <!--<ListBox x:Name="GroupsListBox" 
          Grid.Row="2"
          SelectionMode="Multiple"
-         Grid.Column="1" 
+         Grid.Column="2" 
          ItemsSource="{Binding FilteredGroup}"
          Height="Auto">
             <ListBox.ItemTemplate>
@@ -37,10 +44,11 @@
                       Margin="2"/>
                 </DataTemplate>
             </ListBox.ItemTemplate>
-        </ListBox>
+        </ListBox>-->
+        
         <ComboBox 
             Grid.Row="2"
-            Grid.Column="2"
+            Grid.Column="0"
             SelectedItem="{Binding SelectedResult}"
             ItemsSource="{Binding ResultItems}">
         </ComboBox>
@@ -61,51 +69,57 @@
         </Button>
 
         <DataGrid
-            x:Name="GridPrint"
             Grid.Row="3" 
             Grid.ColumnSpan="5"
+            ItemsSource="{Binding SearchResult}"
             AutoGenerateColumns="False"
             CanUserAddRows="False"
-            IsReadOnly="True"
-            ItemsSource="{Binding SearchResult}">
-
-
+            IsReadOnly="True">
 
             <DataGrid.Columns>
 
-                <DataGridTextColumn Header="Отделение" 
-                           Binding="{Binding DepartmentName}" 
-                           Width="Auto"/>
 
-                <DataGridTextColumn Header="Группа"
-                           Binding="{Binding GroupName}" 
-                           Width="Auto"/>
+                <DataGridTextColumn Width="*" Header="Отделение" Binding="{Binding DepartmentName}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Консультация/Экзамен" 
-                           Binding="{Binding TypeOfLessonName}" 
-                           Width="Auto"/>
 
-                <DataGridTextColumn Header="Тип экзамена" 
-                           Binding="{Binding TypeOfExamName}" 
-                           Width="Auto"/>
+                <DataGridTextColumn Header="Группа" Binding="{Binding GroupName}"/>
 
-                <DataGridTextColumn Header="Дисциплина" 
-                           Binding="{Binding DisciplineName}" 
-                           Width="Auto"/>
+                <DataGridTextColumn Header="Консультация/Экзамен" Binding="{Binding TypeOfLessonName}"/>
 
-                <DataGridTextColumn Header="Преподаватели" 
-                           Binding="{Binding TeachersDisplay}" 
-                           Width="Auto"/>
+                <DataGridTextColumn Header="Тип экзамена" Binding="{Binding TypeOfExamName}"/>
 
-                <DataGridTextColumn Header="Аудитория" 
-                           Binding="{Binding AudienceNumber}" 
-                           Width="Auto"/>
+                <DataGridTextColumn Width="*" Header="Дисциплина" Binding="{Binding DisciplineName}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+
+                <DataGridTextColumn Width="*" Header="Преподаватели" Binding="{Binding TeachersDisplay}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="Аудитория" Binding="{Binding AudienceNumber}"/>
 
                 <DataGridTextColumn Header="Дата/время" 
-                           Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}" 
-                           Width="Auto"/>
-
-                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                 Binding="{Binding DateEvent, StringFormat='{} {0:dd.MM.yyyy HH:mm}'}"/>
+                
+                <DataGridTemplateColumn Header="Действия" Width="180">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">

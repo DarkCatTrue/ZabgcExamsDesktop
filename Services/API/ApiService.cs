@@ -247,10 +247,6 @@ namespace ZabgcExamsDesktop.Services.API
             return await PutAsync($"manager/{manager.IdManager}", manager);
         }
 
-        public async Task<bool> DeleteManagerAsync(int id)
-        {
-            return await DeleteAsync($"manager/{id}");
-        }
         // === Методы CRUD для Зав.Отделений
         public async Task<List<DepartmentOwnerDto>> GetDepartmentOwnersAsync()
         {
