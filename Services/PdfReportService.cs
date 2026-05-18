@@ -29,7 +29,7 @@ namespace ZabgcExamsDesktop.Services
         }
 
         public async Task<bool> GenerateReportAsync(string filePath, ObservableCollection<ExamDisplayDto> exams,
-            DepartmentDto selectedDepartment, string selectedResult)
+            string selectedDepartment, string selectedResult)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace ZabgcExamsDesktop.Services
             document.Add(new Paragraph("\n"));
         }
 
-        private void AddReportHeader(Document document, DepartmentDto department, string reportType,
+        private void AddReportHeader(Document document, string department, string reportType,
             PdfFont fontBold, PdfFont fontItalic, PdfFont fontNormal)
         {
             // Заголовок отчета
@@ -117,12 +117,11 @@ namespace ZabgcExamsDesktop.Services
                 .SetTextAlignment(TextAlignment.CENTER));
 
             // Название отделения
-            var departmentName = department.NameOfDepartment switch
+            var departmentName = department switch
             {
                 "Информационных технологий и экономики" => "Отделение информационных технологий и экономики",
                 "Горное" => "Горное отделение",
                 "Геолого-маркшейдерское" => "Геолого-маркшейдерское отделение",
-                _ => department.NameOfDepartment
             };
 
             document.Add(new Paragraph(departmentName)
@@ -152,7 +151,7 @@ namespace ZabgcExamsDesktop.Services
         }
 
         private async Task AddAgreementSection(Document document, List<ManagerDto> managers,
-            List<DepartmentOwnerDto> departmentOwners, DepartmentDto department,
+            List<DepartmentOwnerDto> departmentOwners, string department,
             PdfFont fontBold, PdfFont fontNormal)
         {
             var studyWorkEmployee = managers.FirstOrDefault(m => m.IdManager == 2);
@@ -167,7 +166,7 @@ namespace ZabgcExamsDesktop.Services
             var agreements = new[]
             {
             new { Name = studyWorkEmployee?.FullName ?? "Не указан", Position = studyWorkEmployee?.Post ?? "Должность не указана" },
-            new { Name = departmentOwner?.OwnerName ?? "Не указан", Position = GetDepartmentOwnerPosition(department.NameOfDepartment) },
+            new { Name = departmentOwner?.OwnerName ?? "Не указан", Position = GetDepartmentOwnerPosition(department) },
             new { Name = ownerStudyDepartment?.FullName ?? "Не указан", Position = ownerStudyDepartment?.Post ?? "Должность не указана" }
         };
 

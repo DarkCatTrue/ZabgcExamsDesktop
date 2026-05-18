@@ -28,9 +28,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
 
         [ObservableProperty] private List<GroupDto> _selectedGroups = new();
         [ObservableProperty] private string _groupsText = string.Empty;
+        [ObservableProperty] private string _departmentsText = string.Empty;
 
         [ObservableProperty] public DepartmentDto _selectedDepartment;
-        partial void OnSelectedDepartmentChanged(DepartmentDto value) => UpdateFilteredGroups();
 
         public PrintResultModel()
         {
@@ -49,19 +49,41 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         [RelayCommand]
         private void SelectionGroups()
         {
-            var dialog = new GroupsSelectionWindow(Group, GroupsText, (selectedGroups, groupsText) =>
+            var dialog = new GroupsSelectionWindow(Group, Department, GroupsText, DepartmentsText, (selectedGroups, groupsText, departmentsText) =>
             {
                 SelectedGroups = selectedGroups;
                 GroupsText = groupsText;
+                DepartmentsText = departmentsText;
             });
             dialog.ShowDialog();
         }
+        [RelayCommand]
+        private async Task SearchAsync()
+        {
+            try
+            {
+                if (!ValidateSearchParameters())
+                    return;
+
+                var typeOfExamName = GetTypeOfExamName();
+                var departmentId = SelectedDepartment?.IdDepartment;
+                var groupIds = SelectedGroups?.Select(g => g.IdGroup).ToList() ?? new List<int>();
+
+                var results = await SearchExamsAsync(typeOfExamName, departmentId, groupIds);
+                SearchResult = new ObservableCollection<ExamDisplayDto>(results);
+                OnPropertyChanged(nameof(SearchResult));
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage($"Ошибка поиска: {ex.Message}");
+            }
+        }
+
         public async Task<List<ExamDisplayDto>> SearchExamsAsync(string typeOfExamName, int? departmentId = null, List<int> groupIds = null)
         {
             try
             {
                 var allExams = await _apiService.GetExamsDisplayAsync();
-
                 var filteredExams = allExams.AsEnumerable();
 
                 filteredExams = typeOfExamName switch
@@ -88,9 +110,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                     .GroupBy(e => new { e.DepartmentName, e.GroupName })
                     .OrderBy(g => g.Key.DepartmentName)
                     .ThenBy(g => g.Key.GroupName)
-                    .SelectMany(g => g
-                        .OrderBy(e => e.DateEvent)
-                        .ThenBy(e => e.DateEvent.TimeOfDay))
+                    .SelectMany(g => g.OrderBy(e => e.DateEvent).ThenBy(e => e.DateEvent.TimeOfDay))
                     .ToList();
 
                 return result;
@@ -99,39 +119,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 MessageBox.Show($"Search error: {ex.Message}");
                 return new List<ExamDisplayDto>();
-            }
-        }
-
-        private List<int> GetSelectedGroupIds()
-        {
-            if (FilteredGroup == null || !FilteredGroup.Any())
-            {
-                return new List<int>();
-            }
-            var selectedGroups = FilteredGroup.Where(g => g.IsSelected).ToList();
-            return selectedGroups.Select(g => g.IdGroup).ToList();
-        }
-
-        [RelayCommand]
-        private async Task SearchAsync()
-        {
-
-            try
-            {
-                if (!ValidateSearchParameters())
-                    return;
-
-                var typeOfExamName = GetTypeOfExamName();
-                var departmentId = SelectedDepartment?.IdDepartment;
-                var selectedGroupIds = GetSelectedGroupIds();
-                var results = await SearchExamsAsync(typeOfExamName, departmentId, selectedGroupIds);
-
-                SearchResult = new ObservableCollection<ExamDisplayDto>(results);
-                OnPropertyChanged(nameof(SearchResult));
-            }
-            catch (Exception ex)
-            {
-                ShowErrorMessage($"Ошибка поиска: {ex.Message}");
             }
         }
 
@@ -156,14 +143,6 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 _ => SelectedResult
             };
         }
-        public void UpdateFilteredGroups()
-        {
-            FilteredGroup = SelectedDepartment == null
-                ? new ObservableCollection<GroupDto>(Group)
-                : new ObservableCollection<GroupDto>(Group.Where(g => g.IdDepartment == SelectedDepartment.IdDepartment));
-
-            OnPropertyChanged(nameof(FilteredGroup));
-        }
 
         private void ShowInfoMessage(string message)
         {
@@ -179,7 +158,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             var filePath = GetSaveFilePath();
             if (string.IsNullOrEmpty(filePath)) return;
 
-            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResult, SelectedDepartment, SelectedResult);
+            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResult, DepartmentsText, SelectedResult);
 
             if (success)
             {
@@ -198,14 +177,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 Logger.Info("Загрузка данных для печати отчета");
 
-                var filteredGroup = _apiService.GetGroupsAsync();
-                await Task.WhenAll(filteredGroup);
-                FilteredGroup = new ObservableCollection<GroupDto>(filteredGroup.Result);
-
                 var (departments, groups, exams) = await LoadBasicDataAsync();
                 await ProcessLoadedDataAsync(departments, groups, exams);
 
-                Logger.Info("Данные для редактирования базы данных успешно загружены.");
+                SelectedGroups = new List<GroupDto>();
+                GroupsText = string.Empty;
+                DepartmentsText = string.Empty;
             }
             catch (Exception ex)
             {
@@ -228,7 +205,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
                 return false;
             }
 
-            if (SelectedDepartment == null || SelectedResult == null)
+            if (DepartmentsText == null || SelectedResult == null)
             {
                 ShowWarningMessage("Выберите отделение и тип отчета");
                 return false;

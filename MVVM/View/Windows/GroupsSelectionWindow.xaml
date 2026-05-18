@@ -5,14 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZabgcExamsDesktop.MVVM.View.Windows"
         mc:Ignorable="d"
-        Title="Добавление групп для печати отчёта" Height="310" Width="580"
+        Title="Добавление групп для печати отчёта" Height="340" Width="580"
         Background="#323a47"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen" 
         WindowStyle="None"
         >
     <Grid MouseDown="ToolBar_MouseDown">
-        <Image x:Name="closeBtn" Source="/Icons/Знак_закрыть.png"  Panel.ZIndex="10" MouseDown="closeBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Height="30" Width="30" Margin="540,10,10,270"/>
+        <Image x:Name="closeBtn" Source="/Icons/Знак_закрыть.png"  Panel.ZIndex="10" MouseDown="closeBtn_MouseDown" RenderOptions.BitmapScalingMode="HighQuality" Height="30" Width="30" Margin="544,6,6,304"/>
         <Frame x:Name="mainFrame" Panel.ZIndex="1" Margin="-2,-5,0,0" NavigationUIVisibility="Hidden"/>
     </Grid>
 </Window>

@@ -11,10 +11,10 @@ namespace ZabgcExamsDesktop.MVVM.View.Windows
     /// </summary>
     public partial class GroupsSelectionWindow : Window
     {
-        public GroupsSelectionWindow(ObservableCollection<GroupDto> groups, string currentGroupsText, Action<List<GroupDto>, string> onSave)
+        public GroupsSelectionWindow(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments, string currentGroupsText, string currentDepartmentsText, Action<List<GroupDto>, string, string> onSave)
         {
             InitializeComponent();
-            var page = new SelectionGroupsPage(groups, currentGroupsText, onSave);
+            var page = new SelectionGroupsPage(groups, departments, currentGroupsText, currentDepartmentsText, onSave);
             page.ViewModel.SetWindow(this);
             mainFrame.Navigate(page);
         }
