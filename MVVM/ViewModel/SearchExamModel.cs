@@ -224,7 +224,53 @@ public partial class SearchExamModel : ObservableObject
     [RelayCommand]
     private async Task DeleteOldExamsAsync()
     {
+        try
+        {
+            var result = MessageBox.Show(
+                "Вы действительно хотите удалить все экзамены, которые были проведены?",
+                "Подтверждение удаления",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            var allExams = await _apiService.GetExamsDisplayAsync();
+            var oldExams = allExams.Where(e => e.DateEvent < DateTime.Now).ToList();
+
+            if (!oldExams.Any())
+            {
+                MessageBox.Show("Нет экзаменов, которые нужно удалить.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            int deletedCount = 0;
+            int errorCount = 0;
+
+            foreach (var exam in oldExams)
+            {
+                var success = await _apiService.DeleteExamAsync(exam.IdExam);
+                if (success)
+                    deletedCount++;
+                else
+                    errorCount++;
+            }
+
+            await LoadAllDataAsync();
+
+            MessageBox.Show(
+                $"Удалено экзаменов: {deletedCount}\nОшибок: {errorCount}",
+                "Результат удаления",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            Logger.Info($"Удалено {deletedCount} старых экзаменов, ошибок {errorCount}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при удалении старых экзаменов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error(ex);
+        }
     }
 
     [RelayCommand]

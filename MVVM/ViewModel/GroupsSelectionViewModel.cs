@@ -13,7 +13,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly Action<List<GroupDto>, string, string> _onSave;
+        private readonly Action<List<GroupDto>, string, DepartmentDto> _onSave;
         private Window _currentWindow;
 
         [ObservableProperty] public ObservableCollection<GroupDto> _group;
@@ -35,7 +35,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         public GroupsSelectionViewModel(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments,
                                     string currentDepartmentsText,
                                     string currentGroupsText,
-                                    Action<List<GroupDto>, string, string> onSave,
+                                    Action<List<GroupDto>, string, DepartmentDto> onSave,
                                     Window currentWindow)
         {
             InitializeCollections(groups, departments);
@@ -118,8 +118,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             try
             {
                 string result = string.Join(", ", SelectedGroups.Select(t => t.NameOfGroup));
-                string departments = SelectedDepartment.NameOfDepartment.ToString();
-                _onSave?.DynamicInvoke(SelectedGroups.ToList(), result, departments);
+                _onSave?.DynamicInvoke(SelectedGroups.ToList(), result, SelectedDepartment);
                 _currentWindow.DialogResult = true;
                 _currentWindow.Close();
             }

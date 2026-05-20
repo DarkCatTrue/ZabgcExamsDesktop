@@ -49,11 +49,12 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
         [RelayCommand]
         private void SelectionGroups()
         {
-            var dialog = new GroupsSelectionWindow(Group, Department, GroupsText, DepartmentsText, (selectedGroups, groupsText, departmentsText) =>
+            var dialog = new GroupsSelectionWindow(Group, Department, GroupsText, DepartmentsText, (selectedGroups, groupsText, selectedDepartment) =>
             {
                 SelectedGroups = selectedGroups;
                 GroupsText = groupsText;
-                DepartmentsText = departmentsText;
+                SelectedDepartment = selectedDepartment;
+                DepartmentsText = selectedDepartment?.NameOfDepartment ?? string.Empty;
             });
             dialog.ShowDialog();
         }
@@ -158,8 +159,9 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             var filePath = GetSaveFilePath();
             if (string.IsNullOrEmpty(filePath)) return;
 
-            var success = await _pdfReportService.GenerateReportAsync(filePath, SearchResult, DepartmentsText, SelectedResult);
+            var examsList = SearchResult?.ToList() ?? new List<ExamDisplayDto>();
 
+            var success = await _pdfReportService.GenerateReportAsync(filePath, examsList, SelectedDepartment, SelectedResult);
             if (success)
             {
                 ShowSuccessMessage($"Файл успешно сохранен: {filePath}");

@@ -1,12 +1,6 @@
-﻿using iText.IO.Font;
-using iText.Kernel.Font;
-using iText.Kernel.Geom;
-using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.Layout.Element;
-using iText.Layout.Properties;
-using System.Collections.ObjectModel;
-using System.IO;
+﻿using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using ZabgcExamsDesktop.MVVM.Model;
 using ZabgcExamsDesktop.Services.API;
 
@@ -15,50 +9,36 @@ namespace ZabgcExamsDesktop.Services
     public class PdfReportService
     {
         private readonly ApiService _apiService;
-        private readonly string _fontNormalPath;
-        private readonly string _fontBoldPath;
-        private readonly string _fontItalicPath;
 
         public PdfReportService(ApiService apiService)
         {
             _apiService = apiService;
-            // Сохраняем только пути к шрифтам, а не сами шрифты
-            _fontNormalPath = @"C:\Windows\Fonts\times.ttf";
-            _fontBoldPath = @"C:\Windows\Fonts\timesbd.ttf";
-            _fontItalicPath = @"C:\Windows\Fonts\timesi.ttf";
         }
 
-        public async Task<bool> GenerateReportAsync(string filePath, ObservableCollection<ExamDisplayDto> exams,
-            string selectedDepartment, string selectedResult)
+        public async Task<bool> GenerateReportAsync(string filePath, List<ExamDisplayDto> exams, DepartmentDto selectedDepartment, string reportType)
         {
             try
             {
                 var managers = await _apiService.GetManagersAsync();
                 var departmentOwners = await _apiService.GetDepartmentOwnersAsync();
 
-                if (File.Exists(filePath))
+                QuestPDF.Settings.License = LicenseType.Community;
+
+                var document = Document.Create(container =>
                 {
-                    File.Delete(filePath);
-                    await Task.Delay(100);
-                }
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(40);
+                        page.DefaultTextStyle(x => x.FontFamily("Times New Roman"));
 
-                using var writer = new PdfWriter(filePath);
-                using var pdf = new PdfDocument(writer);
-                using var document = new Document(pdf, PageSize.A4);
+                        page.Header().Element(x => BuildHeader(x, managers));
+                        page.Content().Element(x => BuildContent(x, exams, selectedDepartment, reportType, managers, departmentOwners));
+                        // Footer – удалён (нумерации нет)
+                    });
+                });
 
-                document.SetMargins(40, 40, 40, 40);
-
-                // Создаем шрифты для КАЖДОГО документа
-                var fontNormal = PdfFontFactory.CreateFont(_fontNormalPath, PdfEncodings.IDENTITY_H);
-                var fontBold = PdfFontFactory.CreateFont(_fontBoldPath, PdfEncodings.IDENTITY_H);
-                var fontItalic = PdfFontFactory.CreateFont(_fontItalicPath, PdfEncodings.IDENTITY_H);
-
-                await AddApprovalSection(document, managers, fontNormal);
-                AddReportHeader(document, selectedDepartment, selectedResult, fontBold, fontItalic, fontNormal);
-                await AddExamsTable(document, exams, selectedResult, fontNormal, fontBold);
-                await AddAgreementSection(document, managers, departmentOwners, selectedDepartment, fontBold, fontNormal);
-
-                document.Close();
+                document.GeneratePdf(filePath);
                 return true;
             }
             catch (Exception ex)
@@ -68,227 +48,205 @@ namespace ZabgcExamsDesktop.Services
             }
         }
 
-        private async Task AddApprovalSection(Document document, List<ManagerDto> managers, PdfFont fontNormal)
+        private void BuildHeader(IContainer container, List<ManagerDto> managers)
         {
             var director = managers.FirstOrDefault(m => m.IdManager == 1);
+            var directorName = director?.FullName ?? "Не указан";
 
-            var approveTable = new Table(1)
-                .SetWidth(UnitValue.CreatePercentValue(100))
-                .SetHorizontalAlignment(HorizontalAlignment.RIGHT)
-                .SetMarginBottom(20);
-
-            var approvalLines = new[]
+            container.Column(col =>
             {
-            "Утверждаю:",
-            "Директор",
-            "ГАПОУ «ЗабГК им. М.И. Агошкова»",
-            $"_________ {director?.FullName ?? "Не указан"}",
-            "«___» ________ 20___ г."
-        };
-
-            foreach (var line in approvalLines)
-            {
-                approveTable.AddCell(new Cell()
-                    .Add(new Paragraph(line).SetFont(fontNormal).SetFontSize(12))
-                    .SetTextAlignment(TextAlignment.RIGHT)
-                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                    .SetPadding(2));
-            }
-
-            document.Add(approveTable);
-            document.Add(new Paragraph("\n"));
+                col.Spacing(2);
+                col.Item().AlignRight().Text("Утверждаю:").FontSize(12);
+                col.Item().AlignRight().Text("Директор").FontSize(12);
+                col.Item().AlignRight().Text("ГАПОУ «ЗабГК им. М.И. Агошкова»").FontSize(12);
+                col.Item().AlignRight().Text($"_________ {directorName}").FontSize(12);
+                col.Item().AlignRight().Text("«___» ________ 20___ г.").FontSize(12);
+                col.Item().Height(20);
+            });
         }
 
-        private void AddReportHeader(Document document, string department, string reportType,
-            PdfFont fontBold, PdfFont fontItalic, PdfFont fontNormal)
+        private void BuildContent(IContainer container, List<ExamDisplayDto> exams, DepartmentDto selectedDepartment,
+                                   string reportType, List<ManagerDto> managers, List<DepartmentOwnerDto> departmentOwners)
         {
-            // Заголовок отчета
-            var title = reportType switch
+            container.Column(col =>
             {
-                "Стандартный" => "Расписание экзаменов",
-                "По модулю" => "Расписание экзаменов по модулю",
-                "Квалификационный" => "Расписание экзаменов квалификационных",
-                _ => "Расписание экзаменов"
-            };
+                col.Spacing(10);
 
-            document.Add(new Paragraph(title)
-                .SetFont(fontBold)
-                .SetFontSize(14)
-                .SetTextAlignment(TextAlignment.CENTER));
+                // Заголовок отчёта
+                string titleText = reportType switch
+                {
+                    "Стандартный" => "Расписание экзаменов",
+                    "По модулю" => "Расписание экзаменов по модулю",
+                    "Квалификационный" => "Расписание экзаменов квалификационных",
+                    _ => "Расписание экзаменов"
+                };
+                col.Item().AlignCenter().Text(titleText).Bold().FontSize(14);
 
-            // Название отделения
-            var departmentName = department switch
-            {
-                "Информационных технологий и экономики" => "Отделение информационных технологий и экономики",
-                "Горное" => "Горное отделение",
-                "Геолого-маркшейдерское" => "Геолого-маркшейдерское отделение",
-            };
+                // Название отделения
+                string departmentDisplay = selectedDepartment.NameOfDepartment switch
+                {
+                    "Информационных технологий и экономики" => "Отделение информационных технологий и экономики",
+                    "Горное" => "Горное отделение",
+                    "Геолого-маркшейдерское" => "Геолого-маркшейдерское отделение",
+                    _ => selectedDepartment.NameOfDepartment
+                };
+                col.Item().AlignCenter().Text(departmentDisplay).Italic().FontSize(12);
 
-            document.Add(new Paragraph(departmentName)
-                .SetFont(fontItalic)
-                .SetFontSize(12)
-                .SetTextAlignment(TextAlignment.CENTER));
+                // Слово "Таблица" перед таблицей (выравнивание вправо)
+                col.Item().AlignRight().Text("Таблица").FontSize(12);
 
-            document.Add(new Paragraph("Таблица")
-                .SetFont(fontNormal)
-                .SetFontSize(12)
-                .SetTextAlignment(TextAlignment.RIGHT)
-                .SetMarginTop(5)
-                .SetMarginBottom(10));
+                // Таблица
+                col.Item().Element(x => BuildTable(x, exams, reportType));
+
+                // "Окончание таблицы" после таблицы, справа
+                col.Item().AlignRight().Text("Окончание таблицы").FontSize(9).Italic();
+
+                col.Item().Height(20);
+
+                // Блок "Согласовано"
+                col.Item().Element(x => BuildAgreement(x, managers, departmentOwners, selectedDepartment));
+            });
         }
 
-        private async Task AddExamsTable(Document document, ObservableCollection<ExamDisplayDto> exams, string reportType,
-            PdfFont fontNormal, PdfFont fontBold)
+        private void BuildTable(IContainer container, List<ExamDisplayDto> exams, string reportType)
         {
-            Table table = reportType switch
-            {
-                "Стандартный" => CreateStandardExamsTable(exams, fontNormal, fontBold),
-                "По модулю" or "Квалификационный" => CreateModuleExamsTable(exams, fontNormal, fontBold),
-                _ => CreateStandardExamsTable(exams, fontNormal, fontBold)
-            };
+            bool isStandard = reportType == "Стандартный";
+            var sortedExams = exams
+                .OrderBy(e => e.GroupName)
+                .ThenBy(e => e.DateEvent)
+                .ToList();
 
-            document.Add(table);
+            container.Table(table =>
+            {
+                // Определяем колонки в зависимости от типа отчёта
+                if (isStandard)
+                {
+                    // Стандартный: Дата, Группа, Консультация/Экзамен, Дисциплина, МДК, Аудитория, Члены ЭК
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(3);   // Дата
+                        columns.RelativeColumn(2);   // Группа
+                        columns.RelativeColumn(3);   // Консультация/Экзамен
+                        columns.RelativeColumn(5);   // Дисциплина, МДК
+                        columns.RelativeColumn(3);   // Аудитория
+                        columns.RelativeColumn(3);   // Члены ЭК
+                    });
+                }
+                else
+                {
+                    // Модульный / Квалификационный: Дата, Группа, ПМ, Дисциплина, МДК, Аудитория, Члены ЭК
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(2);   // Дата
+                        columns.RelativeColumn(2);   // Группа
+                        columns.RelativeColumn(5);   // ПМ
+                        columns.RelativeColumn(2);   // Аудитория
+                        columns.RelativeColumn(3);   // Члены ЭК
+                    });
+                }
+
+                // Заголовки с серым фоном
+                table.Header(header =>
+                {
+                    if (isStandard)
+                    {
+                        header.Cell().Element(CellHeaderStyle).Text("Дата");
+                        header.Cell().Element(CellHeaderStyle).Text("Группа");
+                        header.Cell().Element(CellHeaderStyle).Text("Консультация/\rЭкзамен");
+                        header.Cell().Element(CellHeaderStyle).Text("Дисциплина, МДК");
+                        header.Cell().Element(CellHeaderStyle).Text("Аудитория");
+                        header.Cell().Element(CellHeaderStyle).Text("Члены ЭК");
+                    }
+                    else
+                    {
+                        header.Cell().Element(CellHeaderStyle).Text("Дата");
+                        header.Cell().Element(CellHeaderStyle).Text("Группа");
+                        header.Cell().Element(CellHeaderStyle).Text("ПМ");
+                        header.Cell().Element(CellHeaderStyle).Text("Аудитория");
+                        header.Cell().Element(CellHeaderStyle).Text("Члены ЭК");
+                    }
+                });
+
+                // Данные
+                foreach (var exam in sortedExams)
+                {
+                    // Дата
+                    table.Cell().Element(CellDataStyle).Text(exam.DateEvent.ToString("dd.MM.yyyy HH:mm"));
+                    // Группа
+                    table.Cell().Element(CellDataStyle).Text(exam.GroupName);
+
+                    if (isStandard)
+                        // Консультация/Экзамен
+                        table.Cell().Element(CellDataStyle).Text(exam.TypeOfLessonName);
+                    // Дисциплина, МДК
+                    table.Cell().Element(CellDataStyle).Text(exam.DisciplineName);
+                    // Аудитория
+                    table.Cell().Element(CellDataStyle).Text(exam.AudienceNumber);
+                    // Члены ЭК – с переносом каждого преподавателя на новую строку
+                    table.Cell().Element(CellDataStyle).AlignLeft().Text(FormatTeachers(exam.TeachersDisplay));
+                }
+
+                // Стили ячеек
+                static IContainer CellHeaderStyle(IContainer container)
+                {
+                    return container
+                        .Background(Colors.Grey.Lighten2)
+                        .Border(1)
+                        .Padding(5)
+                        .AlignCenter()
+                        .DefaultTextStyle(x => x.Bold());
+                }
+
+                static IContainer CellDataStyle(IContainer container)
+                {
+                    return container
+                        .Border(1)
+                        .Padding(5)
+                        .AlignCenter();
+                }
+            });
         }
 
-        private async Task AddAgreementSection(Document document, List<ManagerDto> managers,
-            List<DepartmentOwnerDto> departmentOwners, string department,
-            PdfFont fontBold, PdfFont fontNormal)
+        // Вспомогательный метод: разбивает строку преподавателей на отдельные строки
+        private string FormatTeachers(string teachersDisplay)
+        {
+            if (string.IsNullOrWhiteSpace(teachersDisplay))
+                return "";
+
+            var teachers = teachersDisplay.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(t => t.Trim())
+                                          .Where(t => !string.IsNullOrEmpty(t))
+                                          .ToList();
+            return string.Join("\n", teachers);
+        }
+
+        private void BuildAgreement(IContainer container, List<ManagerDto> managers, List<DepartmentOwnerDto> departmentOwners, DepartmentDto department)
         {
             var studyWorkEmployee = managers.FirstOrDefault(m => m.IdManager == 2);
             var ownerStudyDepartment = managers.FirstOrDefault(m => m.IdManager == 3);
             var departmentOwner = departmentOwners.FirstOrDefault(d => d.IdDepartment == department.IdDepartment);
 
-            document.Add(new Paragraph("Согласовано:")
-                .SetFont(fontBold)
-                .SetFontSize(12)
-                .SetMarginTop(20));
-
-            var agreements = new[]
+            container.Column(col =>
             {
-            new { Name = studyWorkEmployee?.FullName ?? "Не указан", Position = studyWorkEmployee?.Post ?? "Должность не указана" },
-            new { Name = departmentOwner?.OwnerName ?? "Не указан", Position = GetDepartmentOwnerPosition(department) },
-            new { Name = ownerStudyDepartment?.FullName ?? "Не указан", Position = ownerStudyDepartment?.Post ?? "Должность не указана" }
-        };
+                col.Spacing(5);
+                col.Item().Text("Согласовано:").Bold();
 
-            foreach (var item in agreements)
-            {
-                var lineTable = new Table(UnitValue.CreatePercentArray(new float[] { 40f, 60f }))
-                    .SetWidth(UnitValue.CreatePercentValue(100))
-                    .SetMarginTop(5);
-
-                lineTable.AddCell(new Cell()
-                    .Add(new Paragraph(item.Position).SetFont(fontNormal))
-                    .SetTextAlignment(TextAlignment.LEFT)
-                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                    .SetPadding(0));
-
-                lineTable.AddCell(new Cell()
-                    .Add(new Paragraph(item.Name).SetFont(fontNormal))
-                    .SetTextAlignment(TextAlignment.RIGHT)
-                    .SetBorder(iText.Layout.Borders.Border.NO_BORDER)
-                    .SetPadding(0));
-
-                document.Add(lineTable);
-            }
-        }
-
-        private Table CreateStandardExamsTable(ObservableCollection<ExamDisplayDto> exams, PdfFont fontNormal, PdfFont fontBold)
-        {
-            var table = new Table(new float[] { 2, 2, 2, 3, 2, 3 })
-                .SetWidth(UnitValue.CreatePercentValue(100))
-                .SetMarginTop(10)
-                .SetMarginBottom(10);
-
-            AddTableHeaders(table, new[] { "Дата", "Группа", "Консультация/Экзамен", "Дисциплина, МДК", "Аудитория", "Члены ЭК" }, fontBold);
-            AddTableData(table, exams, includeLessonType: true, fontNormal);
-
-            return table;
-        }
-
-        private Table CreateModuleExamsTable(ObservableCollection<ExamDisplayDto> exams, PdfFont fontNormal, PdfFont fontBold)
-        {
-            var table = new Table(new float[] { 2, 2, 3, 2, 3 })
-                .SetWidth(UnitValue.CreatePercentValue(100))
-                .SetMarginTop(10)
-                .SetMarginBottom(10);
-
-            AddTableHeaders(table, new[] { "Дата", "Группа", "ПМ", "Аудитория", "Члены ЭК" }, fontBold);
-            AddTableData(table, exams, includeLessonType: false, fontNormal);
-
-            return table;
-        }
-
-        private void AddTableHeaders(Table table, string[] headers, PdfFont fontBold)
-        {
-            foreach (var header in headers)
-            {
-                table.AddHeaderCell(new Cell()
-                    .Add(new Paragraph(header).SetFont(fontBold).SetFontSize(10))
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
-                    .SetPadding(8));
-            }
-        }
-
-        private void AddTableData(Table table, ObservableCollection<ExamDisplayDto> exams, bool includeLessonType, PdfFont fontNormal)
-        {
-            var groupedExams = exams
-                .GroupBy(e => e.GroupName)
-                .OrderBy(g => g.Key)
-                .ToList();
-
-            foreach (var group in groupedExams)
-            {
-                var sortedExams = group.OrderBy(e => e.DateEvent).ToList();
-
-                foreach (var exam in sortedExams)
+                col.Item().Row(row =>
                 {
-                    AddTableCell(table, exam.DateEvent.ToString("dd.MM.yyyy HH:mm"), fontNormal);
-                    AddTableCell(table, exam.GroupName, fontNormal);
-
-                    if (includeLessonType)
-                    {
-                        AddTableCell(table, exam.TypeOfLessonName, fontNormal);
-                    }
-
-                    AddTableCell(table, exam.DisciplineName, fontNormal);
-                    AddTableCell(table, exam.AudienceNumber, fontNormal);
-                    AddTableCell(table, exam.TeachersDisplay, fontNormal, isTeachersCell: true);
-                }
-            }
-        }
-
-        private void AddTableCell(Table table, string text, PdfFont fontNormal, bool isTeachersCell = false)
-        {
-            var cell = new Cell()
-                .SetTextAlignment(TextAlignment.CENTER)
-                .SetPadding(6);
-
-            if (isTeachersCell && !string.IsNullOrEmpty(text))
-            {
-                var teachers = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                  .Select(t => t.Trim())
-                                  .Where(t => !string.IsNullOrEmpty(t))
-                                  .ToList();
-
-                var paragraph = new Paragraph();
-                for (int i = 0; i < teachers.Count; i++)
+                    row.RelativeItem().AlignLeft().Text(studyWorkEmployee?.Post ?? "Должность не указана");
+                    row.RelativeItem().AlignRight().Text(studyWorkEmployee?.FullName ?? "Не указан");
+                });
+                col.Item().Row(row =>
                 {
-                    paragraph.Add(teachers[i]);
-                    if (i < teachers.Count - 1)
-                    {
-                        paragraph.Add(new Text("\n"));
-                    }
-                }
-                paragraph.SetFont(fontNormal).SetFontSize(9);
-                cell.Add(paragraph);
-            }
-            else
-            {
-                cell.Add(new Paragraph(text).SetFont(fontNormal).SetFontSize(9));
-            }
-
-            table.AddCell(cell);
+                    row.RelativeItem().AlignLeft().Text(GetDepartmentOwnerPosition(department.NameOfDepartment));
+                    row.RelativeItem().AlignRight().Text(departmentOwner?.OwnerName ?? "Не указан");
+                });
+                col.Item().Row(row =>
+                {
+                    row.RelativeItem().AlignLeft().Text(ownerStudyDepartment?.Post ?? "Должность не указана");
+                    row.RelativeItem().AlignRight().Text(ownerStudyDepartment?.FullName ?? "Не указан");
+                });
+            });
         }
 
         private string GetDepartmentOwnerPosition(string departmentName)

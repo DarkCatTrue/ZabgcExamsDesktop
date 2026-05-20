@@ -11,7 +11,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Windows
     /// </summary>
     public partial class GroupsSelectionWindow : Window
     {
-        public GroupsSelectionWindow(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments, string currentGroupsText, string currentDepartmentsText, Action<List<GroupDto>, string, string> onSave)
+        public GroupsSelectionWindow(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments, string currentGroupsText, string currentDepartmentsText, Action<List<GroupDto>, string, DepartmentDto> onSave)
         {
             InitializeComponent();
             var page = new SelectionGroupsPage(groups, departments, currentGroupsText, currentDepartmentsText, onSave);

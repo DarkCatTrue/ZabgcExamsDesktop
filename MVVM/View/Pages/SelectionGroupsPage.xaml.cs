@@ -13,7 +13,7 @@ namespace ZabgcExamsDesktop.MVVM.View.Pages
     public partial class SelectionGroupsPage : Page
     {
         public GroupsSelectionViewModel ViewModel { get; }
-        public SelectionGroupsPage(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments, string currentDepartmentsText, string currentGroupsText, Action<List<GroupDto>, string, string> onSave)
+        public SelectionGroupsPage(ObservableCollection<GroupDto> groups, ObservableCollection<DepartmentDto> departments, string currentDepartmentsText, string currentGroupsText, Action<List<GroupDto>, string, DepartmentDto> onSave)
         {
             InitializeComponent();
             var ownerWindow = Window.GetWindow(this);
