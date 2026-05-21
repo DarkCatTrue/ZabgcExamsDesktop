@@ -171,6 +171,7 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             {
                 ShowErrorMessage("Ошибка при создании PDF файла");
             }
+
         }
 
         private async Task LoadDbAsync()
