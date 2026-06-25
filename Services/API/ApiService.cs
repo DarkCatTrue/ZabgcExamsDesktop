@@ -13,17 +13,19 @@ namespace ZabgcExamsDesktop.Services.API
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public ApiService()
         {
+            DotNetEnv.Env.Load();
+            string apiKey = DotNetEnv.Env.GetString("API_KEY");
             _httpClient = new HttpClient();
             var handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
             _httpClient = new HttpClient(handler);
 
-            _httpClient.BaseAddress = new Uri("https://exams.zabgc.ru/api/");
+            _httpClient.BaseAddress = new Uri("https://schedule.zabgc.ru/exams/api/");
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Add("X-API-KEY", "qwerty");
+            _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey);
         }
 
         public async Task<bool> CreateExamAsync(CreateExamDto exam)

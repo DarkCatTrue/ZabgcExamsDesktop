@@ -50,12 +50,21 @@ namespace ZabgcExamsDesktop.MVVM.ViewModel
             if (string.IsNullOrEmpty(currentTeachersText)) return;
 
             var selectedNames = currentTeachersText.Split(new[] { ", " }, StringSplitOptions.None);
-            var toRemove = Teacher.Where(t => selectedNames.Contains(t.FullName)).ToList();
+            var teachersToRemove = new List<TeacherDto>();
 
-            foreach (var teacher in toRemove)
+            foreach (var name in selectedNames)
+            {
+                var teacher = Teacher.FirstOrDefault(t => t.FullName == name);
+                if (teacher != null)
+                {
+                    teachersToRemove.Add(teacher);
+                    SelectedTeachers.Add(teacher);
+                }
+            }
+
+            foreach (var teacher in teachersToRemove)
             {
                 Teacher.Remove(teacher);
-                SelectedTeachers.Add(teacher);
             }
         }
 
