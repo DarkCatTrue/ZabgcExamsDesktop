@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /configuration.json
 /.env
+/.env
+/.env
